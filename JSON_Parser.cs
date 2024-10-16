@@ -31,8 +31,8 @@ namespace JsonUnitSimplifier
         public string field { get; set; }
         public List<int> values { get; set; }
         public string value { get; set; }
-        public List<int> range { get; set; }
-        public int? step { get; set; }
+        public List<double> range { get; set; }
+        public double? step { get; set; }
         public string function { get; set; }
 
         public int Combinations { get 
@@ -40,7 +40,7 @@ namespace JsonUnitSimplifier
                 if (value != null)
                     return 1;
                 if (range != null && step != null)
-                    return (range[1] - range[0]) + 1;
+                    return (int) ((range[1] - range[0]) / step + 1);
                 if (values != null)
                     return values.Count;
                 if (function != null)

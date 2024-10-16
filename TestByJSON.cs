@@ -54,6 +54,10 @@ namespace JsonUnitSimplifier
             var test = JSON_Parser.Parse(json);
 
             Class[] dataset = getDataset<Class>(test);
+            foreach (var item in dataset)
+            {
+                testLogic(item);
+            }
         }
 
         private static T[] getDataset<T>(UnitTest test)
@@ -128,12 +132,16 @@ namespace JsonUnitSimplifier
                         steps_before_incrimination /= test.rules[i].Combinations;
                         int current_arg = -1;
                         int steps = 0;
+
                         for (int j = 0; j < combinationsCount; j++, steps++)
                         {
                             if (steps % steps_before_incrimination == 0)
                                 current_arg++;
 
-                            combinations[i].Add(test.rules[i].field, generation_rules_l[i](current_arg));
+                            if (combinations[j] == null)
+                                combinations[j] = new Dictionary<string, object>();
+
+                            combinations[j].Add(test.rules[i].field, generation_rules_d[test.rules[i].field](current_arg));
                         }
                     }
 
@@ -143,7 +151,7 @@ namespace JsonUnitSimplifier
                         foreach (var key in combinations[i].Keys)
                         {
                             var fieldValue = combinations[i][key];
-                            var fieldInfo = typeof(T).GetField(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            var fieldInfo = typeof(T).GetProperty(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                             fieldInfo.SetValue(instance, fieldValue);
                         }
                         dataset[i] = (T)instance;
@@ -180,7 +188,7 @@ namespace JsonUnitSimplifier
                         foreach (var kvp in generation_rules_d)
                         {
                             var fieldValue = kvp.Value(i);
-                            var fieldInfo = typeof(T).GetField(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            var fieldInfo = typeof(T).GetProperty(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                             fieldInfo.SetValue(instance, fieldValue);
                         }
                         dataset[i] = (T)instance;
@@ -206,7 +214,15 @@ namespace JsonUnitSimplifier
             }
             if (rule.range != null)
             {
-                return i => rule.value;
+                int steps = (int)((rule.range[1] - rule.range[0]) / rule.step + 1);
+                var values = new double[steps];
+
+                for (int j = 0; j < steps; j++)
+                {
+                    values[j] = (double) (rule.range[0] + rule.step * j);
+                }
+
+                return i => values[i % values.Length];
             }
             else if (rule.function != null)
             {
