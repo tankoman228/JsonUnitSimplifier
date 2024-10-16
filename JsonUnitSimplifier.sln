@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32210.238
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonUnitSimplifier", "JsonUnitSimplifier.csproj", "{83E137EF-E0DF-433C-A362-BB762E55E770}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY", "..\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY.csproj", "{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83E137EF-E0DF-433C-A362-BB762E55E770}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83E137EF-E0DF-433C-A362-BB762E55E770}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83E137EF-E0DF-433C-A362-BB762E55E770}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83E137EF-E0DF-433C-A362-BB762E55E770}.Release|Any CPU.Build.0 = Release|Any CPU
+		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {47354165-7353-4251-B614-456A9A1E1B08}
+	EndGlobalSection
+EndGlobal
