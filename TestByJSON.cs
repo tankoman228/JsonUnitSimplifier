@@ -9,18 +9,89 @@ namespace JsonUnitSimplifier
 {
     public class TestByJSON
     {
-        public static void AutoTestByJSON(
-        string json
-        )
+
+        /// <summary>
+        /// Автоматическое тестирование, определяются тетсируемые типы и классы, дополнительная
+        /// лоигка отсутствует
+        /// </summary>
+        /// <param name="json">Строка, в которой содержатся данные о юнит-тесте</param>
+        /// <exception cref="Exception"></exception>
+        public static void AutoTestByJSON(string json)
         {
-            throw new NotImplementedException();
+            var test = JSON_Parser.Parse(json); // Получаем нормальный объект для работы с тестом
+            Type type = null;
+
+            if (test.classes.Count == 1)
+            {
+                type = Type.GetType(test.classes[0]);
+                if (type == null)
+                {
+                    throw new Exception($"Class '{test.classes[0]}' not found.");
+                }
+
+                // Вызываем TestObject с пустым делегатом
+                var method = typeof(TestByJSON).GetMethod("TestObject").MakeGenericMethod(type);
+                method.Invoke(null, new object[] { json, new Action<object>(obj => { }) });
+
+            }
+            else if (test.classes.Count == 4)
+            {
+                // Получаем имена классов из JSON
+                string className = test.classes[0]; // Target class
+                string serviceName = test.classes[1]; // Service class
+                string mockName = test.classes[2]; // Mock class
+                string insertMethodName = test.classes[3]; // Insert method name
+
+                // Получаем типы по именам классов
+                Type classType = Type.GetType(className);
+                Type serviceType = Type.GetType(serviceName);
+                Type mockType = Type.GetType(mockName);
+
+                if (classType == null || serviceType == null || mockType == null)
+                {
+                    throw new Exception("One or more classes not found.");
+                }
+
+                // Создаем экземпляр сервиса с заглушкой
+                var mockInstance = Activator.CreateInstance(mockType);
+                var serviceInstance = Activator.CreateInstance(serviceType, mockInstance);
+
+                // Извлекаем метод вставки
+                var insertMethod = serviceType.GetMethod(insertMethodName);
+                if (insertMethod == null)
+                {
+                    throw new Exception($"Insert method '{insertMethodName}' not found in service class.");
+                }
+
+                // Адаптируем метод вставки в делегат
+                // Адаптируем метод вставки в делегат
+                var insertDelegateType = typeof(Action<,>).MakeGenericType(serviceType, classType);
+                var insertDelegate = Delegate.CreateDelegate(insertDelegateType, serviceInstance, insertMethod);
+
+                // Вызываем TestServiceMVVM
+                var method = typeof(TestByJSON).GetMethod("TestServiceMVVM").MakeGenericMethod(classType, serviceType);
+                method.Invoke(null, new object[] { json, serviceInstance, insertDelegate, null /* Здесь можно передать тестовую логику */ });
+            }
+            else
+            {
+                throw new Exception("Invalid class array. There must be 1 (for testing dataset of this class) or 3 classes (MVVM testing) + 1 method name: [target class, service class, mock class, service class insert function]");
+            }
         }
 
+
+        /// <summary>
+        /// Полностью автоматическое тестирование без доп. логики
+        /// Автоматически определяются тетсируемые типы и классы
+        /// </summary>
+        /// <param name="jsons">JSON строки для работы с юнит-тестами</param>
         public static void AutoTestByJSONs(
             string[] jsons
             )
         {
-            throw new NotImplementedException();
+            foreach (var json in jsons)
+            {
+                AutoTestByJSON(json);
+            }
         }
 
 
@@ -81,7 +152,10 @@ namespace JsonUnitSimplifier
                 }
             }
 
-            testLogic(service, dataset);
+            if (testLogic != null)
+            {
+                testLogic(service, dataset);
+            }
             
 
             // Ассерты после доп. логики
@@ -89,12 +163,13 @@ namespace JsonUnitSimplifier
             {
                 foreach (var a in test.assert_after_lambda)
                 {
-                    if (a.target == "service_to_object")
+                    if (a.target == "service-to-object")
                     {
                         int i = 0;
                         foreach (var item in dataset)
                         {
                             assert<Class, Service>(item, service, a, i);
+                            i++;
                         }
                     }
                     else if (a.target == "service")
@@ -137,8 +212,8 @@ namespace JsonUnitSimplifier
                     foreach (var a in test.assert_before_lambda)
                     {
                         assert(item, a, i);
-                        i++;
                     }
+                    i++;
                 }
             }
 
@@ -157,8 +232,8 @@ namespace JsonUnitSimplifier
                     foreach (var a in test.assert_after_lambda)
                     {
                         assert(item, a, i);
-                        i++;
                     }
+                    i++;
                 }
             }
         }
@@ -299,6 +374,7 @@ namespace JsonUnitSimplifier
                     for (int i = 0; i < combinationsCount; i++)
                     {
                         var parameters = generation_rules_l.Select(rule => rule(i)).ToArray();
+
                         dataset[i] = (T)Activator.CreateInstance(typeof(T), parameters);
                     }
                 }
@@ -425,7 +501,14 @@ namespace JsonUnitSimplifier
                     }
                     else
                     {
-                        expected = assert.results[i];
+                        try
+                        {
+                            expected = assert.results[i];
+                        }
+                        catch (NullReferenceException)
+                        {
+                            expected = null;
+                        }
                     }
 
                     object got = methodInfo.Invoke(obj, parameters);
@@ -459,15 +542,7 @@ namespace JsonUnitSimplifier
             {
                 object actualValue = GetValueFromObject(obj, assert.field);
                 AssertByValue(assert.values[i], actualValue, assert.type_assert);
-            }
-
-            // Проверка единого результата
-            if (assert.result != null)
-            {
-                object actualSingleResult = GetValueFromObject(obj, assert.field); // Здесь можно вызывать метод, если это нужно
-                if (!actualSingleResult.Equals(assert.result))
-                    throw new Exception($"Expected single result '{assert.result}', but got '{actualSingleResult}'.");
-            }         
+            }       
         }
 
 
@@ -533,16 +608,17 @@ namespace JsonUnitSimplifier
                     parameters.Insert(0, obj);
 
                     object expected = null;
-                    if (assert.result != null)
-                    {
-                        expected = assert.result;
-                    }
-                    else
+                    if (assert.results != null)
                     {
                         expected = assert.results[i];
                     }
+                    else
+                    {
+                        expected = assert.result;
+                    }
 
                     object got = methodInfo.Invoke(service, parameters.ToArray());
+
                     AssertByValue(expected, got, assert.type_assert);
 
                     // Проверка исключения
@@ -589,15 +665,18 @@ namespace JsonUnitSimplifier
 
         private static void AssertByValue(object expected, object actualValue, string type_assert)
         {
+            if (actualValue != null && expected != null)
+                actualValue = Convert.ChangeType(actualValue, expected.GetType());
+
             switch (type_assert)
             {
                 case "equals":
-                    if (!actualValue.Equals(expected))
+                    if (!object.Equals(actualValue, expected))
                         throw new Exception($"Expected value '{expected}', but got '{actualValue}'.");
                     break;
 
                 case "unequals":
-                    if (actualValue.Equals(expected))
+                    if (object.Equals(actualValue, expected))
                         throw new Exception($"Expected value to be different from '{expected}', but got the same.");
                     break;
 

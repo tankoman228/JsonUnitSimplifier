@@ -20,7 +20,7 @@ namespace JsonUnitSimplifier
 
         public static void AddFunc(string key, Func<int, object> func)
         {
-            Functions.Add(key, func);
+            Functions[key] = func;
         }
 
         public static Func<int, object> Get(string key)
