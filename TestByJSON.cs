@@ -49,28 +49,25 @@ namespace JsonUnitSimplifier
 
                 if (classType == null || serviceType == null || mockType == null)
                 {
-                    throw new Exception("One or more classes not found.");
+                    throw new Exception($"One or more classes not found. Only: {classType} {serviceType} {mockType} have been found");
                 }
 
-                // Создаем экземпляр сервиса с заглушкой
-                var mockInstance = Activator.CreateInstance(mockType);
-                var serviceInstance = Activator.CreateInstance(serviceType, mockInstance);
+                // Создаем экземпляр сервиса и мока
+                var serviceInstance = Activator.CreateInstance(serviceType, Activator.CreateInstance(mockType));
 
-                // Извлекаем метод вставки
+                // Создаем делегат для метода вставки
                 var insertMethod = serviceType.GetMethod(insertMethodName);
-                if (insertMethod == null)
+                var insertDelegate = Delegate.CreateDelegate(typeof(Action<,>).MakeGenericType(serviceType, classType), insertMethod);
+
+                // Создаем тестовую логику как Action с нужными параметрами
+                var testLogicDelegate = (Action<object, object[]>)((a, b) =>
                 {
-                    throw new Exception($"Insert method '{insertMethodName}' not found in service class.");
-                }
+                    // Ваша логика тестирования здесь
+                });
 
-                // Адаптируем метод вставки в делегат
-                // Адаптируем метод вставки в делегат
-                var insertDelegateType = typeof(Action<,>).MakeGenericType(serviceType, classType);
-                var insertDelegate = Delegate.CreateDelegate(insertDelegateType, serviceInstance, insertMethod);
-
-                // Вызываем TestServiceMVVM
-                var method = typeof(TestByJSON).GetMethod("TestServiceMVVM").MakeGenericMethod(classType, serviceType);
-                method.Invoke(null, new object[] { json, serviceInstance, insertDelegate, null /* Здесь можно передать тестовую логику */ });
+                // Теперь вызываем метод TestServiceMVVM с нужными типами
+                var testServiceMVVMMethod = typeof(TestByJSON).GetMethod("TestServiceMVVM").MakeGenericMethod(classType, serviceType);
+                testServiceMVVMMethod.Invoke(null, new object[] { json, serviceInstance, insertDelegate, testLogicDelegate });
             }
             else
             {
