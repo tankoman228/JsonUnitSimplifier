@@ -52,9 +52,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="WorkingJSONs\Auto.json" />
+    <None Include="WorkingJSONs\CombinationModeAllToAll.json" />
+    <None Include="WorkingJSONs\CombinationModeSimple.json" />
+    <None Include="WorkingJSONs\Constructors.json" />
+    <None Include="WorkingJSONs\Exceptions.json" />
+    <None Include="WorkingJSONs\Fields.json" />
+    <None Include="WorkingJSONs\Methods.json" />
+    <None Include="WorkingJSONs\MVVM.json" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="TestFromJSON\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
