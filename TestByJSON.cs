@@ -615,11 +615,19 @@ namespace JsonUnitSimplifier
 
                 try
                 {
-                    // Вызов метода с аргументами
-                    var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType));
-                    parameters.Insert(0, obj);
-
-                    methodInfo.Invoke(service, parameters.ToArray());
+                    if (assert.args.Count > 0 && assert.args[0] is JArray)
+                    {
+                        var args = assert.args[i] as JArray;
+                        var parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToList();
+                        parameters.Insert(0, obj);
+                        methodInfo.Invoke(service, parameters.ToArray());
+                    }
+                    else
+                    {
+                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToList();
+                        parameters.Insert(0, obj);
+                        methodInfo.Invoke(service, parameters.ToArray());
+                    }
 
                     // Проверка исключения
                     if (assert.exception != null)
@@ -630,15 +638,17 @@ namespace JsonUnitSimplifier
                 catch (TargetInvocationException ex)
                 {
                     // Проверка на соответствие имени исключения
-                    if (ex.InnerException?.GetType().Name != assert.exception)
+                    if (assert.exceptions != null && assert.exceptions[i] != null && ex.InnerException?.GetType().Name != assert.exceptions[i])
+                    {
+                        throw new Exception($"Expected exception '{assert.exceptions[i]}' index of {i}, but got '{ex.InnerException?.GetType().Name}'.");
+                    }
+                    if (assert.exception != null && ex.InnerException?.GetType().Name != assert.exception)
                     {
                         throw new Exception($"Expected exception '{assert.exception}', but got '{ex.InnerException?.GetType().Name}'.");
                     }
                 }
             }
-
-            // Вызов функции по имени
-            if (assert.function != null)
+            else if (assert.function != null)
             {
                 var methodInfo = typeof(Service).GetMethod(assert.function);
                 if (methodInfo == null)
@@ -648,23 +658,46 @@ namespace JsonUnitSimplifier
 
                 try
                 {
-                    // Вызов метода с аргументами
-                    var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType));
-                    parameters.Insert(0, obj);
-
                     object expected = null;
-                    if (assert.results != null)
-                    {
-                        expected = assert.results[i];
-                    }
-                    else
+                    if (assert.result != null)
                     {
                         expected = assert.result;
                     }
+                    else
+                    {
+                        try
+                        {
+                            expected = assert.results[i];
+                        }
+                        catch (NullReferenceException)
+                        {
+                            expected = null;
+                        }
+                    }
 
-                    object got = methodInfo.Invoke(service, parameters.ToArray());
+                    if (assert.args.Count > 0 && assert.args[0] is JArray)
+                    {
+                        var args = assert.args[i] as JArray;
+                        var parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToList();
+                        parameters.Insert(0, obj);
+                        var got = methodInfo.Invoke(service, parameters.ToArray());
+                        AssertByValue(expected, got, assert.type_assert, i);
 
-                    AssertByValue(expected, got, assert.type_assert, i);
+                    }
+                    else
+                    {
+                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToList();
+                        parameters.Insert(0, obj);
+
+                        foreach (var param in parameters)
+                        {
+                            Console.WriteLine(param.GetType().FullName);
+                        }
+                        Console.WriteLine(assert.function);
+
+                        var got = methodInfo.Invoke(service, parameters.ToArray());
+                        AssertByValue(expected, got, assert.type_assert, i);
+                    }
 
                     // Проверка исключения
                     if (assert.exception != null)
@@ -675,13 +708,20 @@ namespace JsonUnitSimplifier
                 catch (TargetInvocationException ex)
                 {
                     // Проверка на соответствие имени исключения
-                    if (ex.InnerException?.GetType().Name != assert.exception)
+                    if (assert.exceptions != null && assert.exceptions[i] != null && ex.InnerException?.GetType().Name != assert.exceptions[i])
+                    {
+                        throw new Exception($"Expected exception '{assert.exceptions[i]}' index of {i}, but got '{ex.InnerException?.GetType().Name}'.");
+                    }
+                    if (assert.exception != null && ex.InnerException?.GetType().Name != assert.exception)
                     {
                         throw new Exception($"Expected exception '{assert.exception}', but got '{ex.InnerException?.GetType().Name}'.");
                     }
                 }
             }
-
+            else
+            {
+                throw new Exception("pony");
+            }
         }
 
 
