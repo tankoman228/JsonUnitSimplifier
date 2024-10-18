@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace JsonUnitSimplifier
@@ -36,11 +38,10 @@ namespace JsonUnitSimplifier
             }
             else if (test.classes.Count == 4)
             {
-                // Получаем имена классов из JSON
-                string className = test.classes[0]; // Target class
-                string serviceName = test.classes[1]; // Service class
-                string mockName = test.classes[2]; // Mock class
-                string insertMethodName = test.classes[3]; // Insert method name
+                string className = test.classes[0];
+                string serviceName = test.classes[1]; 
+                string mockName = test.classes[2];
+                string insertMethodName = test.classes[3]; 
 
                 // Получаем типы по именам классов
                 Type classType = Type.GetType(className);
@@ -55,18 +56,13 @@ namespace JsonUnitSimplifier
                 // Создаем экземпляр сервиса и мока
                 var serviceInstance = Activator.CreateInstance(serviceType, Activator.CreateInstance(mockType));
 
-                // Создаем делегат для метода вставки
+                // Создаем делегаты
                 var insertMethod = serviceType.GetMethod(insertMethodName);
                 var insertDelegate = Delegate.CreateDelegate(typeof(Action<,>).MakeGenericType(serviceType, classType), insertMethod);
-
-                // Создаем тестовую логику как Action с нужными параметрами
-                var testLogicDelegate = (Action<object, object[]>)((a, b) =>
-                {
-                    // Ваша логика тестирования здесь
-                });
+                var testLogicDelegate = (Action<object, object[]>)((a, b) =>{});
 
                 // Теперь вызываем метод TestServiceMVVM с нужными типами
-                var testServiceMVVMMethod = typeof(TestByJSON).GetMethod("TestServiceMVVM").MakeGenericMethod(classType, serviceType);
+                var testServiceMVVMMethod = typeof(TestByJSON).GetMethod("TestLayeredService").MakeGenericMethod(classType, serviceType);
                 testServiceMVVMMethod.Invoke(null, new object[] { json, serviceInstance, insertDelegate, testLogicDelegate });
             }
             else
@@ -93,7 +89,7 @@ namespace JsonUnitSimplifier
 
 
         /// <summary>
-        /// Для тестирования паттерна формата MVVM. Где служба управляет объектами модели БД 
+        /// Для тестирования паттерна слоистой архитектуры. Где служба управляет объектами модели БД 
         /// (есть возможность создать заглушку) и должна быть
         /// функция добавления объектов, функцию добавления пробросить в лямбде.
         /// Тестируются как сами объекты датасета, так и сама служба.
@@ -106,7 +102,7 @@ namespace JsonUnitSimplifier
         /// <param name="insert">Переброска функции добавления в службу тестовых данных</param>
         /// <param name="testLogic">Дополнительная логика тестирования, которую нельзя описать в JSON файле</param>
         /// <exception cref="Exception"></exception>
-        public static void TestServiceMVVM<Class, Service>(
+        public static void TestLayeredService<Class, Service>(
             string json,
             Service service,
             Action<Service, Class> insert,
@@ -416,11 +412,20 @@ namespace JsonUnitSimplifier
             if (rule.range != null) // Область значений
             {
                 int steps = (int)((rule.range[1] - rule.range[0]) / rule.step + 1);
-                var values = new double[steps];
+
+                Type type = null;
+
+                if (rule.field_type != null)
+                    type = Type.GetType(rule.field_type);
+
+                if (type == null)
+                    type = typeof(double);
+
+                var values = new object[steps];
 
                 for (int j = 0; j < steps; j++)
                 {
-                    values[j] = (double) (rule.range[0] + rule.step * j);
+                    values[j] = Convert.ChangeType(rule.range[0] + rule.step * j, type);
                 }
 
                 return i => values[i % values.Length];
@@ -457,40 +462,6 @@ namespace JsonUnitSimplifier
 
                 try
                 {
-                    // Вызов метода с аргументами
-                    var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToArray();
-                    methodInfo.Invoke(obj, parameters);
-
-                    // Проверка исключения
-                    if (assert.exception != null)
-                    {
-                        throw new Exception($"Expected exception '{assert.exception}' was not thrown.");
-                    }
-                }
-                catch (TargetInvocationException ex)
-                {
-                    // Проверка на соответствие имени исключения
-                    if (ex.InnerException?.GetType().Name != assert.exception)
-                    {
-                        throw new Exception($"Expected exception '{assert.exception}', but got '{ex.InnerException?.GetType().Name}'.");
-                    }
-                }
-            }
-
-            // Вызов функции по имени
-            if (assert.function != null)
-            {
-                var methodInfo = typeof(T).GetMethod(assert.function);
-                if (methodInfo == null)
-                {
-                    throw new Exception($"Method {assert.function} not found in type {typeof(T).Name}");
-                }
-
-                try
-                {
-                    // Вызов метода с аргументами
-                    var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToArray();
-
                     object expected = null;
                     if (assert.result != null)
                     {
@@ -508,8 +479,18 @@ namespace JsonUnitSimplifier
                         }
                     }
 
-                    object got = methodInfo.Invoke(obj, parameters);
-                    AssertByValue(expected, got, assert.type_assert);
+                    Console.WriteLine(i);
+                    if (assert.args.Count > 0 && assert.args[0] is JArray)
+                    {
+                        var args = assert.args[i] as JArray;
+                        object[] parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToArray();
+                        methodInfo.Invoke(obj, parameters);
+                    }
+                    else
+                    {
+                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToArray();
+                        methodInfo.Invoke(obj, parameters);
+                    }
 
                     // Проверка исключения
                     if (assert.exception != null)
@@ -520,7 +501,74 @@ namespace JsonUnitSimplifier
                 catch (TargetInvocationException ex)
                 {
                     // Проверка на соответствие имени исключения
-                    if (ex.InnerException?.GetType().Name != assert.exception)
+                    if (assert.exceptions != null && assert.exceptions[i] != null && ex.InnerException?.GetType().Name != assert.exceptions[i])
+                    {
+                        throw new Exception($"Expected exception '{assert.exceptions[i]}' index of {i}, but got '{ex.InnerException?.GetType().Name}'.");
+                    }
+                    if (assert.exception != null && ex.InnerException?.GetType().Name != assert.exception)
+                    {
+                        throw new Exception($"Expected exception '{assert.exception}', but got '{ex.InnerException?.GetType().Name}'.");
+                    }
+                }
+            }
+
+            // Вызов функции по имени
+            if (assert.function != null)
+            {
+                var methodInfo = typeof(T).GetMethod(assert.function);
+                if (methodInfo == null)
+                {
+                    throw new Exception($"Method {assert.function} not found in type {typeof(T).Name}");
+                }
+
+                try
+                {                   
+                    object expected = null;
+                    if (assert.result != null)
+                    {
+                        expected = assert.result;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            expected = assert.results[i];
+                        }
+                        catch (NullReferenceException)
+                        {
+                            expected = null;
+                        }
+                    }
+
+                    Console.WriteLine(i);
+                    if  (assert.args.Count > 0 && assert.args[0] is JArray)
+                    {
+                        var args = assert.args[i] as JArray;
+                        object[] parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToArray();
+                        object got = methodInfo.Invoke(obj, parameters);
+                        AssertByValue(expected, got, assert.type_assert, i);
+                    }
+                    else
+                    {
+                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToArray();
+                        object got = methodInfo.Invoke(obj, parameters);
+                        AssertByValue(expected, got, assert.type_assert, i);
+                    }
+
+                    // Проверка исключения
+                    if (assert.exception != null)
+                    {
+                        throw new Exception($"Expected exception '{assert.exception}' was not thrown.");
+                    }
+                }
+                catch (TargetInvocationException ex)
+                {
+                    // Проверка на соответствие имени исключения
+                    if (assert.exceptions != null && assert.exceptions[i] != null && ex.InnerException?.GetType().Name != assert.exceptions[i])
+                    {
+                        throw new Exception($"Expected exception '{assert.exceptions[i]}' index of {i}, but got '{ex.InnerException?.GetType().Name}'.");
+                    }
+                    if (assert.exception != null && ex.InnerException?.GetType().Name != assert.exception)
                     {
                         throw new Exception($"Expected exception '{assert.exception}', but got '{ex.InnerException?.GetType().Name}'.");
                     }
@@ -531,14 +579,14 @@ namespace JsonUnitSimplifier
             if (assert.value != null)
             {
                 object actualValue = GetValueFromObject(obj, assert.field);
-                AssertByValue(assert.value, actualValue, assert.type_assert);
+                AssertByValue(assert.value, actualValue, assert.type_assert, i);
             }
 
             // Проверка списка результатов
             if (assert.values != null)
             {
                 object actualValue = GetValueFromObject(obj, assert.field);
-                AssertByValue(assert.values[i], actualValue, assert.type_assert);
+                AssertByValue(assert.values[i], actualValue, assert.type_assert, i);
             }       
         }
 
@@ -616,7 +664,7 @@ namespace JsonUnitSimplifier
 
                     object got = methodInfo.Invoke(service, parameters.ToArray());
 
-                    AssertByValue(expected, got, assert.type_assert);
+                    AssertByValue(expected, got, assert.type_assert, i);
 
                     // Проверка исключения
                     if (assert.exception != null)
@@ -660,7 +708,7 @@ namespace JsonUnitSimplifier
         }
 
 
-        private static void AssertByValue(object expected, object actualValue, string type_assert)
+        private static void AssertByValue(object expected, object actualValue, string type_assert, int i)
         {
             if (actualValue != null && expected != null)
                 actualValue = Convert.ChangeType(actualValue, expected.GetType());
@@ -685,6 +733,21 @@ namespace JsonUnitSimplifier
                 case "lesser":
                     if (Convert.ToDouble(actualValue) >= Convert.ToDouble(expected))
                         throw new Exception($"Expected value to be lesser than '{expected}', but got '{actualValue}'.");
+                    break;
+
+                case "regex":
+
+                    var r = new Regex(expected.ToString());
+                    if (!r.IsMatch(actualValue.ToString()))
+                        throw new Exception($"Expected value to be like regex '{expected}', but got '{actualValue}'.");
+
+                    break;
+
+                case "function":
+
+                    if (actualValue == GenerateFunctions.Get(expected.ToString())(i))
+                        throw new Exception($"Expected value to be like regex '{expected}', but got '{actualValue}'.");
+
                     break;
 
                 default:

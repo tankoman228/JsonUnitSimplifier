@@ -53,11 +53,11 @@ namespace JsonUnitSimplifier
                 if (type == null)
                     throw new Exception($"Type {field_type} not found.");
 
-                if (values == null)
+                if (value != null)
                 {
                     value = Convert.ChangeType(value, type);
                 }
-                else
+                else if (values != null)
                 {
                     for (int i = 0; i < values.Count; i++)
                     {
@@ -93,6 +93,7 @@ namespace JsonUnitSimplifier
         public string target { get; set; }
         public List<object> args { get; set; }
         public string exception { get; set; }
+        public List<string> exceptions { get; set; }
         public List<object> results { get; set; }
         public object result { get; set; }
         public string type_assert { get; set; }

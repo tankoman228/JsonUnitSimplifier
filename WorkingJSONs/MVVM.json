@@ -6,7 +6,7 @@
   "rules": [
     {
       "field": "FieldInt",
-	  "field_type": "System.Int32",
+	    "field_type": "System.Int32",
       "values": [ 1, 2, 3, 4, 5 ]
     },
     {
