@@ -40,6 +40,7 @@ namespace JsonUnitSimplifier
         public List<double> range { get; set; }
         public double? step { get; set; }
         public string function { get; set; }
+        public int? function_calls { get; set; }
         public string field_type { get; set; }
 
         public void try_update_type_of_fields()
@@ -80,7 +81,11 @@ namespace JsonUnitSimplifier
                 if (range != null && step != null)
                     return (int) ((range[1] - range[0]) / step + 1);
                 if (function != null)
+                {
+                    if (function_calls != null)
+                        return (int)function_calls;
                     return 1;
+                }
                 throw new Exception("I am a teapot");
             } 
         }

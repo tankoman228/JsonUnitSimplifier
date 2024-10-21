@@ -21,6 +21,7 @@ namespace JsonUnitSimplifier
         public static void AutoTestByJSON(string json)
         {
             var test = JSON_Parser.Parse(json); // Получаем нормальный объект для работы с тестом
+            Console.WriteLine(test.id);
             Type type = null;
 
             if (test.classes.Count == 1)
@@ -110,6 +111,7 @@ namespace JsonUnitSimplifier
             )
         {
             var test = JSON_Parser.Parse(json); // Получаем нормальный объект для работы с тестом
+            Console.WriteLine(test.id);
             Class[] dataset = getDataset<Class>(test); // И сам датасет
             foreach (var item in dataset)
             {
@@ -125,23 +127,44 @@ namespace JsonUnitSimplifier
                     {
                         int i = 0;
                         foreach (var item in dataset) {
-                            assert<Class, Service>(item, service, a, i);
+                            try
+                            {
+                                assert<Class, Service>(item, service, a, i);
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new Exception($"Assert of {a.function}{a.method}(dataset[{i}], ...) failed: {ex.Message}");
+                            }
+
                         }
                     }
                     else if (a.target == "service")
                     {
-                        assert<Service>(service, a, 0);
+                        try { 
+                            assert<Service>(service, a, 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} service class failed: {ex.Message}");
+                        }
                     }
                     else if (a.target == "objects")
                     {
                         int i = 0;
                         foreach (var item in dataset)
                         {
-                            assert(item, a, i);
-                            i++;
+                            try
+                            {
+                                assert(item, a, i);
+                                i++;
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} dataset[{i}] failed: {ex.Message}");
+                            }
                         }
                     }
-                    else { throw new Exception($"{a.target} is not a valid target"); }
+                    else { throw new Exception($"{a.target} is not a valid target. It can be only service_to_object, service or objects"); }
                 }
             }
 
@@ -149,7 +172,6 @@ namespace JsonUnitSimplifier
             {
                 testLogic(service, dataset);
             }
-            
 
             // Ассерты после доп. логики
             if (test.assert_after_lambda != null)
@@ -161,26 +183,49 @@ namespace JsonUnitSimplifier
                         int i = 0;
                         foreach (var item in dataset)
                         {
-                            assert<Class, Service>(item, service, a, i);
-                            i++;
+                            try
+                            {
+                                assert<Class, Service>(item, service, a, i);
+                                i++;
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new Exception($"Assert of {a.function}{a.method}(dataset[{i}], ...) failed: {ex.Message}");
+                            }
+
                         }
                     }
                     else if (a.target == "service")
                     {
-                        assert<Service>(service, a, 0);
+                        try
+                        {
+                            assert<Service>(service, a, 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} service class failed: {ex.Message}");
+                        }
                     }
                     else if (a.target == "objects")
                     {
                         int i = 0;
                         foreach (var item in dataset)
                         {
-                            assert(item, a, i);
-                            i++;
+                            try
+                            {
+                                assert(item, a, i);
+                                i++;
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} dataset[{i}] failed: {ex.Message}");
+                            }
                         }
                     }
-                    else { throw new Exception($"{a.target} is not a valid target"); }
+                    else { throw new Exception($"{a.target} is not a valid target. It can be only service-to-object, service or objects"); }
                 }
             }
+
         }
 
         /// <summary>
@@ -195,6 +240,7 @@ namespace JsonUnitSimplifier
         {
             var test = JSON_Parser.Parse(json); // Получаем нормальный объект для работы с тестом
             Class[] dataset = getDataset<Class>(test); // И сам датасет
+            Console.WriteLine(test.id);
 
             // Ассерты до доп. логики
             if (test.assert_before_lambda != null)
@@ -204,7 +250,14 @@ namespace JsonUnitSimplifier
                 {
                     foreach (var a in test.assert_before_lambda)
                     {
-                        assert(item, a, i);
+                        try
+                        {
+                            assert(item, a, i);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method}{a.field} dataset[{i}] failed: {ex.Message}");
+                        }
                     }
                     i++;
                 }
@@ -224,7 +277,14 @@ namespace JsonUnitSimplifier
                 {
                     foreach (var a in test.assert_after_lambda)
                     {
-                        assert(item, a, i);
+                        try
+                        {
+                            assert(item, a, i);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method}{a.field} dataset[{i}] failed: {ex.Message}");
+                        }
                     }
                     i++;
                 }
@@ -436,7 +496,7 @@ namespace JsonUnitSimplifier
             }
             else
             {
-                throw new Exception("Читай документацию, простофиля"); // TODO: прописать нормальные строки исключениям
+                throw new Exception("The generation rule is undefined, read documentation, please"); 
             }
         }
 
@@ -479,7 +539,6 @@ namespace JsonUnitSimplifier
                         }
                     }
 
-                    Console.WriteLine(i);
                     if (assert.args.Count > 0 && assert.args[0] is JArray)
                     {
                         var args = assert.args[i] as JArray;
@@ -522,25 +581,18 @@ namespace JsonUnitSimplifier
                 }
 
                 try
-                {                   
+                {
                     object expected = null;
-                    if (assert.result != null)
+
+                    if (assert.results != null && assert.results.Count > 0)
                     {
-                        expected = assert.result;
+                        expected = assert.results[i];                         
                     }
                     else
                     {
-                        try
-                        {
-                            expected = assert.results[i];
-                        }
-                        catch (NullReferenceException)
-                        {
-                            expected = null;
-                        }
+                        expected = assert.result;
                     }
 
-                    Console.WriteLine(i);
                     if  (assert.args.Count > 0 && assert.args[0] is JArray)
                     {
                         var args = assert.args[i] as JArray;
@@ -689,12 +741,6 @@ namespace JsonUnitSimplifier
                         var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToList();
                         parameters.Insert(0, obj);
 
-                        foreach (var param in parameters)
-                        {
-                            Console.WriteLine(param.GetType().FullName);
-                        }
-                        Console.WriteLine(assert.function);
-
                         var got = methodInfo.Invoke(service, parameters.ToArray());
                         AssertByValue(expected, got, assert.type_assert, i);
                     }
@@ -720,7 +766,7 @@ namespace JsonUnitSimplifier
             }
             else
             {
-                throw new Exception("pony");
+                throw new Exception("There must be function or method!");
             }
         }
 
@@ -776,7 +822,6 @@ namespace JsonUnitSimplifier
                     break;
 
                 case "regex":
-
                     var r = new Regex(expected.ToString());
                     if (!r.IsMatch(actualValue.ToString()))
                         throw new Exception($"Expected value to be like regex '{expected}', but got '{actualValue}'.");
@@ -784,7 +829,6 @@ namespace JsonUnitSimplifier
                     break;
 
                 case "function":
-
                     if (actualValue == GenerateFunctions.Get(expected.ToString())(i))
                         throw new Exception($"Expected value to be like regex '{expected}', but got '{actualValue}'.");
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,15 +9,7 @@ namespace JsonUnitSimplifier
 {
     public class GenerateFunctions
     {
-        private static readonly Dictionary<string, Func<int, object>> Functions = new Dictionary<string, Func<int, object>>()
-        {
-            {"name", new Func<int, object>(i => { return 5; })},
-            {"sirname", new Func<int, object>(i => { return 5; })},
-            {"lastname", new Func<int, object>(i => { return 5; })},
-            {"name+sirname+lastname", new Func<int, object>(i => { return 5; })},
-            {"phone", new Func<int, object>(i => { return 5; })},
-            {"email", new Func<int, object>(i => { return 5; })},
-        };
+        private static readonly Dictionary<string, Func<int, object>> Functions = new Dictionary<string, Func<int, object>>() { };
 
         public static void AddFunc(string key, Func<int, object> func)
         {
@@ -36,6 +29,34 @@ namespace JsonUnitSimplifier
                 keys += key + " ";
             }
             return keys;
+        }
+
+
+        static GenerateFunctions()
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            foreach (var assembly in assemblies)
+            {
+                var types = assembly.GetTypes();
+
+                foreach (var type in types)
+                {
+                    var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
+                    foreach (var method in methods)
+                    {
+                        var attribute = method.GetCustomAttribute<GenerateFunctionAttribute>();
+                        if (attribute != null)
+                        {
+                            var func = (Func<int, object>)Delegate.CreateDelegate(typeof(Func<int, object>), method);
+                            Functions[attribute.Name] = func;
+
+                            Console.WriteLine($"Function '{attribute.Name}' added from {type.Name}.{method.Name}.");
+                        }
+                    }
+                }
+            }
         }
     }
 }
