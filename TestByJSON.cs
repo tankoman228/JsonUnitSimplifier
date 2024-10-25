@@ -123,13 +123,15 @@ namespace JsonUnitSimplifier
             {
                 foreach (var a in test.assert_before_lambda)
                 {
-                    if (a.target == "service_to_object")
+                    if (a.target == "service-to-object")
                     {
                         int i = 0;
-                        foreach (var item in dataset) {
+                        foreach (var item in dataset)
+                        {
                             try
                             {
                                 assert<Class, Service>(item, service, a, i);
+                                i++;
                             }
                             catch (Exception ex)
                             {
@@ -140,7 +142,8 @@ namespace JsonUnitSimplifier
                     }
                     else if (a.target == "service")
                     {
-                        try { 
+                        try
+                        {
                             assert<Service>(service, a, 0);
                         }
                         catch (Exception ex)
