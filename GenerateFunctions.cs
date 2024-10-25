@@ -31,32 +31,68 @@ namespace JsonUnitSimplifier
             return keys;
         }
 
-
+        /// <summary>
+        /// Загрузка функций в словарь по GenerateFunctionAttribute
+        /// </summary>
         static GenerateFunctions()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
             foreach (var assembly in assemblies)
             {
-                var types = assembly.GetTypes();
+                Type[] types;
+
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    // Логируем ошибки загрузки типов и продолжаем
+                    foreach (var loaderException in ex.LoaderExceptions)
+                    {
+                        Console.WriteLine($"Loader exception: {loaderException.Message}");
+                    }
+                    continue; // Переходим к следующему assembly
+                }
 
                 foreach (var type in types)
                 {
-                    var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    MethodInfo[] methods;
+
+                    try
+                    {
+                        methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Логируем ошибку при получении методов и продолжаем
+                        Console.WriteLine($"Error retrieving methods for {type.Name}: {ex.Message}");
+                        continue; // Переходим к следующему type
+                    }
 
                     foreach (var method in methods)
                     {
                         var attribute = method.GetCustomAttribute<GenerateFunctionAttribute>();
                         if (attribute != null)
                         {
-                            var func = (Func<int, object>)Delegate.CreateDelegate(typeof(Func<int, object>), method);
-                            Functions[attribute.Name] = func;
+                            try
+                            {
+                                var func = (Func<int, object>)Delegate.CreateDelegate(typeof(Func<int, object>), method);
+                                Functions[attribute.Name] = func;
 
-                            Console.WriteLine($"Function '{attribute.Name}' added from {type.Name}.{method.Name}.");
+                                Console.WriteLine($"Function '{attribute.Name}' added from {type.Name}.{method.Name}.");
+                            }
+                            catch (Exception ex)
+                            {
+                                // Логируем ошибку создания делегата
+                                Console.WriteLine($"Error creating delegate for {method.Name}: {ex.Message}");
+                            }
                         }
                     }
                 }
             }
         }
+
     }
 }
