@@ -4,21 +4,55 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace JsonUnitSimplifier
 {
     internal class JSON_Parser
-    {
+    {      
         internal static UnitTest Parse(string json)
         {
+            try
+            {
+                Console.WriteLine("Trying to read json as file");
+                json = File.ReadAllText(json);
+            } 
+            catch (Exception e)
+            {
+                Console.WriteLine(e.GetType().Name + ": can't find or read file, trying to parse json as json string");
+            }            
+
             var test = JsonConvert.DeserializeObject<UnitTest>(json);
             foreach (var rule in test.rules)
             {
                 rule.try_update_type_of_fields();
             }
 
+            if (test.assert_before_lambda != null && test.assert_before_lambda.Count > 0)
+            {
+                foreach (var assert in test.assert_before_lambda)
+                {
+                    if (assert.type_assert == null)
+                        assert.type_assert = "equals";
+                    if (assert.args == null)
+                        assert.args = EMPTY_LIST;
+                }
+            }
+            if (test.assert_after_lambda != null && test.assert_after_lambda.Count > 0)
+            {
+                foreach (var assert in test.assert_after_lambda)
+                {
+                    if (assert.type_assert == null)
+                        assert.type_assert = "equals";
+                    if (assert.args == null)
+                        assert.args = EMPTY_LIST;
+                }
+            }
+
             return test;
         }
+
+        private static List<object> EMPTY_LIST = new List<object>();
     }
 
     internal class UnitTest

@@ -315,14 +315,14 @@ namespace JsonUnitSimplifier
             {
                 foreach (var rule in test.rules)
                 {
-                    generation_rules_d.Add(rule.field, get_generation_rule(rule));
+                    generation_rules_d.Add(rule.field, get_generation_rule(rule, typeof(T)));
                 }
             }
             else if (test.mode == "constructor") //Объекты создавать конструктором, который соответствует функциям
             {
                 foreach (var rule in test.rules)
                 {
-                    generation_rules_l.Add(get_generation_rule(rule));
+                    generation_rules_l.Add(get_generation_rule(rule, typeof(T)));
                 }
             }
             else { throw new InvalidCastException($"Unknown mode in JSON file (\"mode\" must be \"fields\" or \"constructor)\""); }
@@ -404,8 +404,16 @@ namespace JsonUnitSimplifier
                         foreach (var key in combinations[i].Keys)
                         {
                             var fieldValue = combinations[i][key];
-                            var fieldInfo = typeof(T).GetProperty(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                            fieldInfo.SetValue(instance, fieldValue);
+                           
+
+                            var propertyInfo = typeof(T).GetProperty(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (propertyInfo != null)
+                                propertyInfo.SetValue(instance, fieldValue);
+                            else
+                            {
+                                var fieldInfo = typeof(T).GetField(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                fieldInfo.SetValue(instance, fieldValue);
+                            }
                         }
                         dataset[i] = (T)instance;
                     }
@@ -442,8 +450,16 @@ namespace JsonUnitSimplifier
                         foreach (var kvp in generation_rules_d)
                         {
                             var fieldValue = kvp.Value(i);
-                            var fieldInfo = typeof(T).GetProperty(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                            fieldInfo.SetValue(instance, fieldValue);
+                            var propertyInfo = typeof(T).GetProperty(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            
+                            if (propertyInfo != null)
+                                propertyInfo.SetValue(instance, fieldValue);
+                            else
+                            {
+                                var fieldInfo = typeof(T).GetField(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                fieldInfo.SetValue(instance, fieldValue);
+                            }
+
                         }
                         dataset[i] = (T)instance;
                     }
@@ -459,50 +475,65 @@ namespace JsonUnitSimplifier
 
         /// <summary>
         /// Преобразует указанное правило генерации датасета в ЗАЦИКЛЕННУЮ НА СЕБЯ функцию.
+        /// Если правило имеет функциональный тип изначально, зацикливания не происходит
         /// </summary>
         /// <param name="rule">Правило (из массива Rules класса UnitTest, получаемого после парсинга JSON)</param>
         /// <exception cref="Exception"></exception>
-        private static Func<int, object> get_generation_rule(Rule rule)
+        private static Func<int, object> get_generation_rule(Rule rule, Type datasetType)
+        {
+            var typeOfRule = GetTypeOfRule(rule, datasetType);
+            var innerFunc = get_generation_rule_object(rule, datasetType);
+
+            if (typeOfRule != null)
+                return i => Convert.ChangeType(innerFunc(i), typeOfRule);
+            else return innerFunc;
+        }
+        private static Func<int, object> get_generation_rule_object(Rule rule, Type datasetType)
         {
             if (rule.values != null) // Список возможных значений
-            {
                 return i => rule.values[i % rule.values.Count];
-            }
-            else if (rule.value != null) // Одно значение
-            {
+
+            if (rule.value != null) // Одно значение
                 return i => rule.value;
-            }
+            
             if (rule.range != null) // Область значений
             {
                 int steps = (int)((rule.range[1] - rule.range[0]) / rule.step + 1);
 
-                Type type = null;
-
-                if (rule.field_type != null)
-                    type = Type.GetType(rule.field_type);
-
-                if (type == null)
-                    type = typeof(double);
-
+                Type type = GetTypeOfRule(rule, datasetType);
                 var values = new object[steps];
 
                 for (int j = 0; j < steps; j++)
                 {
-                    values[j] = Convert.ChangeType(rule.range[0] + rule.step * j, type);
+                    values[j] = rule.range[0] + rule.step * j;
                 }
 
                 return i => values[i % values.Length];
             }
-            else if (rule.function != null) // Предопределённая функция
+            if (rule.function != null) // Предопределённая функция
             {
                 return GenerateFunctions.Get(rule.function);
             }
-            else
-            {
-                throw new Exception("The generation rule is undefined, read documentation, please"); 
-            }
+            throw new Exception($"Generation rule of field '{rule.field}' is incorrect");            
         }
 
+
+        private static Type GetTypeOfRule(Rule rule, Type DatasetType)
+        {
+            Type type = null;
+
+            if (rule.field_type != null) // User sets the type
+                type = Type.GetType(rule.field_type);
+            else if (rule.field != null) // Auto-finding type
+            {
+                var field = DatasetType.GetField(rule.field);
+                var prop = DatasetType.GetProperty(rule.field);
+
+                if (field != null)      return field.FieldType;
+                else if (prop != null)  return prop.PropertyType;
+            }        
+            return type;
+        }
 
         /// <summary>
         /// Выполнение ассерта (проверки), описанного в юнит-тесте (см. файл JSON)
