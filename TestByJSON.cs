@@ -22,7 +22,7 @@ namespace JsonUnitSimplifier
         public static void AutoTestByJSON(string json)
         {
             var test = JSON_Parser.Parse(json); // Получаем нормальный объект для работы с тестом
-            Console.WriteLine(test.id);
+            Console.WriteLine("Autotest mode: " + test.id);
             Type type = null;
 
             if (test.classes.Count == 1)
@@ -59,7 +59,7 @@ namespace JsonUnitSimplifier
                 var serviceInstance = Activator.CreateInstance(serviceType, Activator.CreateInstance(mockType));
 
                 // Создаем делегаты
-                var insertMethod = serviceType.GetMethod(insertMethodName);
+                var insertMethod = serviceType.GetMethod(insertMethodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 var insertDelegate = Delegate.CreateDelegate(typeof(Action<,>).MakeGenericType(serviceType, classType), insertMethod);
                 var testLogicDelegate = (Action<object, object[]>)((a, b) =>{});
 
@@ -84,10 +84,29 @@ namespace JsonUnitSimplifier
             )
         {
             var files = Directory.GetFiles(jsons_path, "*.json");
+            string fail_message = "";
+            int failed_count = 0;
 
             foreach (var json in files)
             {
-                AutoTestByJSON(json);
+                try
+                {
+                    AutoTestByJSON(json);
+                }
+                catch (Exception ex)
+                {
+                    failed_count++;
+                    fail_message += $"\nFAIL: {json} CAUSE \n{ex.GetType().Name}\n{ex.Message}\n{ex.StackTrace}\n";                
+                }
+            }
+
+            if (failed_count > 0)
+            {
+                throw new Exception($"{failed_count}/{files.Length} tests FAILED. Errors: \n{fail_message}");
+            }
+            else
+            {
+                Console.WriteLine($"All the tests {files.Length}/{files.Length} are successful");
             }
         }
 
@@ -114,7 +133,7 @@ namespace JsonUnitSimplifier
             )
         {
             var test = JSON_Parser.Parse(json); // Получаем нормальный объект для работы с тестом
-            Console.WriteLine(test.id);
+            Console.WriteLine(test.id + " as TestLayeredService started");
             Class[] dataset = getDataset<Class>(test); // И сам датасет
             foreach (var item in dataset)
             {
@@ -246,7 +265,7 @@ namespace JsonUnitSimplifier
         {
             var test = JSON_Parser.Parse(json); // Получаем нормальный объект для работы с тестом
             Class[] dataset = getDataset<Class>(test); // И сам датасет
-            Console.WriteLine(test.id);
+            Console.WriteLine(test.id + " start as a usual test");
 
             // Ассерты до доп. логики
             if (test.assert_before_lambda != null)

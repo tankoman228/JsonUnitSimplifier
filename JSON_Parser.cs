@@ -23,6 +23,10 @@ namespace JsonUnitSimplifier
             }            
 
             var test = JsonConvert.DeserializeObject<UnitTest>(json);
+
+            if (test.rules == null)
+                test.rules = new List<Rule>();
+
             foreach (var rule in test.rules)
             {
                 rule.try_update_type_of_fields();
