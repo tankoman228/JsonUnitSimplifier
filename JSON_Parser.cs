@@ -14,7 +14,6 @@ namespace JsonUnitSimplifier
         {
             try
             {
-                Console.WriteLine("Trying to read json as file");
                 json = File.ReadAllText(json);
             } 
             catch (Exception e)

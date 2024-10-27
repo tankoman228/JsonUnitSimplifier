@@ -56,16 +56,21 @@ namespace JsonUnitSimplifier
                 }
 
                 // Создаем экземпляр сервиса и мока
-                var serviceInstance = Activator.CreateInstance(serviceType, Activator.CreateInstance(mockType));
+                var mock = Activator.CreateInstance(mockType);
+                var serviceInstance = Activator.CreateInstance(serviceType, mock);
 
                 // Создаем делегаты
                 var insertMethod = serviceType.GetMethod(insertMethodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 var insertDelegate = Delegate.CreateDelegate(typeof(Action<,>).MakeGenericType(serviceType, classType), insertMethod);
                 var testLogicDelegate = (Action<object, object[]>)((a, b) =>{});
 
+                if (mock == null) throw new Exception("Can't create a mock (argument for conssctructor) => Service instance is null");
+                if (serviceInstance == null) throw new Exception("Can't create Service instance");
+                if (insertDelegate == null) throw new Exception("Can't create insert delegate");
+
                 // Теперь вызываем метод TestServiceMVVM с нужными типами
                 var testServiceMVVMMethod = typeof(TestByJSON).GetMethod("TestLayeredService").MakeGenericMethod(classType, serviceType);
-                testServiceMVVMMethod.Invoke(null, new object[] { json, serviceInstance, insertDelegate, testLogicDelegate });
+                testServiceMVVMMethod.Invoke(null, new object[] { json, serviceInstance, insertDelegate, testLogicDelegate });              
             }
             else
             {
@@ -96,7 +101,7 @@ namespace JsonUnitSimplifier
                 catch (Exception ex)
                 {
                     failed_count++;
-                    fail_message += $"\nFAIL: {json} CAUSE \n{ex.GetType().Name}\n{ex.Message}\n{ex.StackTrace}\n";                
+                    fail_message += $"\nFAIL: {json} CAUSE \n{ex.InnerException?.GetType().Name}\n{ex.InnerException?.Message}\n{ex.StackTrace}\n";                
                 }
             }
 
@@ -538,8 +543,6 @@ namespace JsonUnitSimplifier
             }
             throw new Exception($"Generation rule of field '{rule.field}' is incorrect");            
         }
-
-
         private static Type GetTypeOfRule(Rule rule, Type DatasetType)
         {
             Type type = null;
@@ -556,6 +559,7 @@ namespace JsonUnitSimplifier
             }        
             return type;
         }
+
 
         /// <summary>
         /// Выполнение ассерта (проверки), описанного в юнит-тесте (см. файл JSON)
@@ -578,34 +582,10 @@ namespace JsonUnitSimplifier
 
                 try
                 {
-                    object expected = null;
-                    if (assert.result != null)
-                    {
-                        expected = assert.result;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            expected = assert.results[i];
-                        }
-                        catch (NullReferenceException)
-                        {
-                            expected = null;
-                        }
-                    }
+                    object[] parameters = new object[0];
+                    GetParameters(assert, methodInfo, out parameters, i);
+                    methodInfo.Invoke(obj, parameters);
 
-                    if (assert.args.Count > 0 && assert.args[0] is JArray)
-                    {
-                        var args = assert.args[i] as JArray;
-                        object[] parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToArray();
-                        methodInfo.Invoke(obj, parameters);
-                    }
-                    else
-                    {
-                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToArray();
-                        methodInfo.Invoke(obj, parameters);
-                    }
 
                     // Проверка исключения
                     if (assert.exception != null)
@@ -628,74 +608,76 @@ namespace JsonUnitSimplifier
             }
 
             // Вызов функции по имени
-            if (assert.function != null)
+            else if (assert.function != null)
             {
                 var methodInfo = typeof(T).GetMethod(assert.function);
                 if (methodInfo == null)
                 {
-                    throw new Exception($"Method {assert.function} not found in type {typeof(T).Name}");
+                    throw new Exception($"Funtion {assert.function} not found in type {typeof(T).Name}");
                 }
 
                 try
                 {
                     object expected = null;
-
                     if (assert.results != null && assert.results.Count > 0)
                     {
-                        expected = assert.results[i];                         
+                        expected = assert.results[i];
                     }
                     else
                     {
                         expected = assert.result;
                     }
 
-                    if  (assert.args.Count > 0 && assert.args[0] is JArray)
-                    {
-                        var args = assert.args[i] as JArray;
-                        object[] parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToArray();
-                        object got = methodInfo.Invoke(obj, parameters);
-                        AssertByValue(expected, got, assert.type_assert, i);
-                    }
-                    else
-                    {
-                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToArray();
-                        object got = methodInfo.Invoke(obj, parameters);
-                        AssertByValue(expected, got, assert.type_assert, i);
-                    }
+
+                    object[] parameters = new object[0];
+                    GetParameters(assert, methodInfo, out parameters, i);
+
+                    object got = methodInfo.Invoke(obj, parameters);
+                    AssertByValue(expected, got, assert.type_assert, i);
+
 
                     // Проверка исключения
-                    if (assert.exception != null)
+                    if (assert.exception != null || (assert.exceptions != null && assert.exceptions[i] != null))
                     {
-                        throw new Exception($"Expected exception '{assert.exception}' was not thrown.");
+                        throw new Exception($"Expected exception '{assert.exception}{assert.exceptions?[i]}' was not thrown.");
                     }
                 }
                 catch (TargetInvocationException ex)
                 {
+                    string expectedException = null;
+
+                    if (assert.exceptions != null && assert.exceptions[i] != null)
+                        expectedException = assert.exceptions[i];
+                    else
+                        expectedException = assert.exception;
+
                     // Проверка на соответствие имени исключения
-                    if (assert.exceptions != null && assert.exceptions[i] != null && ex.InnerException?.GetType().Name != assert.exceptions[i])
+                    if (expectedException != ex.InnerException?.GetType().Name)
                     {
-                        throw new Exception($"Expected exception '{assert.exceptions[i]}' index of {i}, but got '{ex.InnerException?.GetType().Name}'.");
+                        throw new Exception($"Expected exception '{assert.exceptions[i]}', i = {i}, but got '{ex.InnerException?.GetType().Name}'.");
                     }
-                    if (assert.exception != null && ex.InnerException?.GetType().Name != assert.exception)
-                    {
-                        throw new Exception($"Expected exception '{assert.exception}', but got '{ex.InnerException?.GetType().Name}'.");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
                 }
             }
 
             // Проверка значений полей на основе type_assert
-            if (assert.value != null)
+            else if (assert.value != null)
             {
                 object actualValue = GetValueFromObject(obj, assert.field);
                 AssertByValue(assert.value, actualValue, assert.type_assert, i);
             }
 
             // Проверка списка результатов
-            if (assert.values != null)
+            else if (assert.values != null)
             {
                 object actualValue = GetValueFromObject(obj, assert.field);
                 AssertByValue(assert.values[i], actualValue, assert.type_assert, i);
-            }       
+            }
+
+            else throw new Exception("Unknown assert type error");
         }
 
 
@@ -723,19 +705,13 @@ namespace JsonUnitSimplifier
 
                 try
                 {
-                    if (assert.args.Count > 0 && assert.args[0] is JArray)
-                    {
-                        var args = assert.args[i] as JArray;
-                        var parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToList();
-                        parameters.Insert(0, obj);
-                        methodInfo.Invoke(service, parameters.ToArray());
-                    }
-                    else
-                    {
-                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToList();
-                        parameters.Insert(0, obj);
-                        methodInfo.Invoke(service, parameters.ToArray());
-                    }
+                    object[] parameters = new object[0];
+                    GetParameters(assert, methodInfo, out parameters, i);
+                    var parametersl = parameters.ToList();
+                    parametersl.Insert(0, obj);
+                    parameters = parametersl.ToArray();
+
+                    methodInfo.Invoke(service, parameters);
 
                     // Проверка исключения
                     if (assert.exception != null)
@@ -745,14 +721,17 @@ namespace JsonUnitSimplifier
                 }
                 catch (TargetInvocationException ex)
                 {
+                    string expectedException = null;
+
+                    if (assert.exceptions != null && assert.exceptions[i] != null)
+                        expectedException = assert.exceptions[i];
+                    else
+                        expectedException = assert.exception;
+
                     // Проверка на соответствие имени исключения
-                    if (assert.exceptions != null && assert.exceptions[i] != null && ex.InnerException?.GetType().Name != assert.exceptions[i])
+                    if (expectedException != ex.InnerException?.GetType().Name)
                     {
-                        throw new Exception($"Expected exception '{assert.exceptions[i]}' index of {i}, but got '{ex.InnerException?.GetType().Name}'.");
-                    }
-                    if (assert.exception != null && ex.InnerException?.GetType().Name != assert.exception)
-                    {
-                        throw new Exception($"Expected exception '{assert.exception}', but got '{ex.InnerException?.GetType().Name}'.");
+                        throw new Exception($"Expected exception '{assert.exceptions[i]}', i = {i}, but got '{ex.InnerException?.GetType().Name}'.");
                     }
                 }
             }
@@ -783,24 +762,15 @@ namespace JsonUnitSimplifier
                         }
                     }
 
-                    if (assert.args.Count > 0 && assert.args[0] is JArray)
-                    {
-                        var args = assert.args[i] as JArray;
-                        var parameters = args.Select(arg => ((JToken)arg).ToObject(methodInfo.GetParameters()[0].ParameterType)).ToList();
-                        parameters.Insert(0, obj);
-                        var got = methodInfo.Invoke(service, parameters.ToArray());
-                        AssertByValue(expected, got, assert.type_assert, i);
+                    object[] parameters = new object[0];
+                    GetParameters(assert, methodInfo, out parameters, i);
+                    var parametersl = parameters.ToList();
+                    parametersl.Insert(0, obj);
+                    parameters = parametersl.ToArray();
 
-                    }
-                    else
-                    {
-                        var parameters = assert.args.ConvertAll(arg => Convert.ChangeType(arg, methodInfo.GetParameters()[0].ParameterType)).ToList();
-                        parameters.Insert(0, obj);
-
-                        var got = methodInfo.Invoke(service, parameters.ToArray());
-                        AssertByValue(expected, got, assert.type_assert, i);
-                    }
-
+                    var got = methodInfo.Invoke(service, parameters);
+                    AssertByValue(expected, got, assert.type_assert, i);
+                    
                     // Проверка исключения
                     if (assert.exception != null)
                     {
@@ -893,6 +863,29 @@ namespace JsonUnitSimplifier
                 default:
                     throw new Exception($"Unknown assertion type: {type_assert}");
             }
+        }
+
+
+        private static void GetParameters(Assert assert, MethodInfo methodInfo, out object[] parameters, int i)
+        {
+            var requiredParams = methodInfo.GetParameters();
+
+            if (assert.args.Count > 0 && assert.args[0] is JArray)
+            {
+                var args = assert.args[i] as JArray;
+                parameters = args.Select((arg, index) =>
+                    arg == null && requiredParams[index].ParameterType.IsClass
+                        ? null
+                        : ((JToken)arg).ToObject(requiredParams[index].ParameterType)).ToArray();
+            }
+            else
+            {
+                parameters = assert.args.Select((arg, index) =>
+                    arg == null && requiredParams[index].ParameterType.IsClass
+                        ? null
+                        : Convert.ChangeType(arg, requiredParams[index].ParameterType)).ToArray();
+            }
+
         }
     }
 }
