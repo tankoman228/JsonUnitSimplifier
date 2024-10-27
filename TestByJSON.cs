@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -79,10 +80,12 @@ namespace JsonUnitSimplifier
         /// </summary>
         /// <param name="jsons">JSON строки для работы с юнит-тестами</param>
         public static void AutoTestByJSONs(
-            string[] jsons
+            string jsons_path
             )
         {
-            foreach (var json in jsons)
+            var files = Directory.GetFiles(jsons_path, "*.json");
+
+            foreach (var json in files)
             {
                 AutoTestByJSON(json);
             }
