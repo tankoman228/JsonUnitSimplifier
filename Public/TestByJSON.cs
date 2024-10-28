@@ -173,7 +173,7 @@ namespace JsonUnitSimplifier
                         }
                         catch (Exception ex)
                         {
-                            throw new Exception($"Assert of {a.function}{a.method}(dataset[{i}], ...) failed: {ex.Message}");
+                            ExceptionBuilder.ThrowWithFullInfo($"service-to-object assertion try failed at {i} object as first arg:", ex);
                         }
 
                     }
@@ -194,7 +194,7 @@ namespace JsonUnitSimplifier
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} service class failed: {ex.Message}");
+                        ExceptionBuilder.ThrowWithFullInfo("service assertion try failed: ", ex);
                     }
                 }
                 else if (a.target == "objects")
@@ -209,11 +209,11 @@ namespace JsonUnitSimplifier
                         }
                         catch (Exception ex)
                         {
-                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} dataset[{i}] failed: {ex.Message}");
+                            ExceptionBuilder.ThrowWithFullInfo($"dataset assertion try failed at {i} object:", ex);
                         }
                     }
                 }
-                else { throw new Exception($"{a.target} is not a valid target. It can be only service-to-object, service or objects"); }
+                else { throw new ArgumentException($"{a.target} is not a valid target. It can be only service-to-object, service or objects"); }
             }
         }
 
@@ -262,7 +262,7 @@ namespace JsonUnitSimplifier
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception($"Assert of {a.type_assert} {a.function}{a.method}{a.field} dataset[{i}] failed: {ex.Message}\n{ex.StackTrace}\n{ex.InnerException?.StackTrace}");
+                        ExceptionBuilder.ThrowWithFullInfo($"Dataset {i} assertion failed", ex);
                     }
                 }
                 i++;

@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\DatasetCreator.cs" />
+    <Compile Include="Internal\ExceptionBuilder.cs" />
     <Compile Include="Public\Constructor.cs" />
     <Compile Include="Internal\Assertion.cs" />
     <Compile Include="Public\GenerateFunctionAttribute.cs" />

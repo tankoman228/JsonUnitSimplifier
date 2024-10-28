@@ -22,173 +22,181 @@ namespace JsonUnitSimplifier
         /// <exception cref="InvalidCastException"></exception>
         internal static T[] getDataset<T>(UnitTest test)
         {
-            if (test.rules.Count == 0)
-                return new T[0];
-
-            // Правила генерации для разных режимов
-            List<Func<int, object>> rules_constructor = new List<Func<int, object>>();
-            Dictionary<string, Func<int, object>> fields_constructor = new Dictionary<string, Func<int, object>>();
-
-            // Определение правил (парсинг из JSON'а)
-            if (test.mode == "fields") //Объекты T создавать не конструктором, а задавая поля
+            try
             {
-                foreach (var rule in test.rules)
+                if (test.rules.Count == 0)
+                    return new T[0];
+
+                // Правила генерации для разных режимов
+                List<Func<int, object>> rules_constructor = new List<Func<int, object>>();
+                Dictionary<string, Func<int, object>> fields_constructor = new Dictionary<string, Func<int, object>>();
+
+                // Определение правил (парсинг из JSON'а)
+                if (test.mode == "fields") //Объекты T создавать не конструктором, а задавая поля
                 {
-                    fields_constructor.Add(rule.field, get_generation_rule(rule, typeof(T)));
-                }
-            }
-            else if (test.mode == "constructor") //Объекты создавать конструктором, который соответствует функциям
-            {
-                foreach (var rule in test.rules)
-                {
-                    rules_constructor.Add(get_generation_rule(rule, typeof(T)));
-                }
-            }
-            else { throw new InvalidCastException($"Unknown mode in JSON file (\"mode\" must be \"fields\" or \"constructor)\""); }
-
-
-            // Все возможные комбинации
-            if (test.combination_mode == "all-to-all")
-            {
-                int combinationsCount = 1; // Счёт числа комбинаций
-                foreach (var rule in test.rules)
-                {
-                    combinationsCount *= rule.Combinations;
-                }
-
-                T[] dataset = new T[combinationsCount];
-
-                // Конструктором перебираем все возможные варианты
-                if (test.mode == "constructor")
-                {
-                    // Массив, где строка - объект, столбец - аргумент конструктора
-                    var combinations = new object[combinationsCount, test.rules.Count];
-
-                    // Даже не пытайся понять этот алгоритм, но он работает, заполняя массив
-                    int steps_before_incrimination = combinationsCount;
-                    for (int i = 0; i < test.rules.Count; i++)
+                    foreach (var rule in test.rules)
                     {
-                        steps_before_incrimination /= test.rules[i].Combinations;
-                        int current_arg = -1;
-                        int steps = 0;
-                        for (int j = 0; j < combinationsCount; j++, steps++)
-                        {
-                            if (steps % steps_before_incrimination == 0)
-                                current_arg++;
-
-                            combinations[j, i] = rules_constructor[i](current_arg);
-                        }
-                    }
-
-                    // По массиву объекты * аргументы создаём сам датасет
-                    for (int i = 0; i < combinationsCount; i++)
-                    {
-                        var parameters = new object[test.rules.Count];
-                        for (int j = 0; j < test.rules.Count; j++)
-                        {
-                            parameters[j] = combinations[i, j];
-                        }
-                        dataset[i] = (T)Activator.CreateInstance(typeof(T), parameters);
+                        fields_constructor.Add(rule.field, get_generation_rule(rule, typeof(T)));
                     }
                 }
-                else if (test.mode == "fields") // Задаём поля, нужен пустой конструктор
+                else if (test.mode == "constructor") //Объекты создавать конструктором, который соответствует функциям
                 {
-                    // Массив объекты: (поле: значение)
-                    var combinations = new Dictionary<string, object>[combinationsCount];
-
-                    // Этот алгоритм работает, всё, что нужно знать, еле-как вывел
-                    int steps_before_incrimination = combinationsCount;
-                    for (int i = 0; i < test.rules.Count; i++)
+                    foreach (var rule in test.rules)
                     {
-                        steps_before_incrimination /= test.rules[i].Combinations;
-                        int current_arg = -1;
-                        int steps = 0;
+                        rules_constructor.Add(get_generation_rule(rule, typeof(T)));
+                    }
+                }
+                else { throw new InvalidCastException($"Unknown mode in JSON file (\"mode\" must be \"fields\" or \"constructor)\""); }
 
-                        for (int j = 0; j < combinationsCount; j++, steps++)
-                        {
-                            if (steps % steps_before_incrimination == 0)
-                                current_arg++;
 
-                            if (combinations[j] == null)
-                                combinations[j] = new Dictionary<string, object>();
-
-                            combinations[j].Add(test.rules[i].field, fields_constructor[test.rules[i].field](current_arg));
-                        }
+                // Все возможные комбинации
+                if (test.combination_mode == "all-to-all")
+                {
+                    int combinationsCount = 1; // Счёт числа комбинаций
+                    foreach (var rule in test.rules)
+                    {
+                        combinationsCount *= rule.Combinations;
                     }
 
-                    // По созданным комбинациям создаём объекты, задаём поля, короче, делаем датасет
-                    for (int i = 0; i < combinationsCount; i++)
+                    T[] dataset = new T[combinationsCount];
+
+                    // Конструктором перебираем все возможные варианты
+                    if (test.mode == "constructor")
                     {
-                        var instance = Activator.CreateInstance(typeof(T));
-                        foreach (var key in combinations[i].Keys)
+                        // Массив, где строка - объект, столбец - аргумент конструктора
+                        var combinations = new object[combinationsCount, test.rules.Count];
+
+                        // Даже не пытайся понять этот алгоритм, но он работает, заполняя массив
+                        int steps_before_incrimination = combinationsCount;
+                        for (int i = 0; i < test.rules.Count; i++)
                         {
-                            var fieldValue = combinations[i][key];
-
-
-                            var propertyInfo = typeof(T).GetProperty(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                            if (propertyInfo != null)
-                                propertyInfo.SetValue(instance, fieldValue);
-                            else
+                            steps_before_incrimination /= test.rules[i].Combinations;
+                            int current_arg = -1;
+                            int steps = 0;
+                            for (int j = 0; j < combinationsCount; j++, steps++)
                             {
-                                var fieldInfo = typeof(T).GetField(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                                fieldInfo.SetValue(instance, fieldValue);
+                                if (steps % steps_before_incrimination == 0)
+                                    current_arg++;
+
+                                combinations[j, i] = rules_constructor[i](current_arg);
                             }
                         }
-                        dataset[i] = (T)instance;
-                    }
-                }
-                else { throw new InvalidCastException(); }
 
-                return dataset;
-            }
-            else if (test.combination_mode == "simple") // Минимум комбинаций
-            {
-                int combinationsCount = 1; // Число комбинаций - максимум из возможных значений полей
-                foreach (var rule in test.rules)
-                {
-                    if (combinationsCount < rule.Combinations)
-                        combinationsCount = rule.Combinations;
-                }
-
-                T[] dataset = new T[combinationsCount];
-
-                if (test.mode == "constructor") // По конструктору просто перебираем, rule(i) всё равно зациклены
-                {
-                    for (int i = 0; i < combinationsCount; i++)
-                    {
-                        var parameters = rules_constructor.Select(rule => rule(i)).ToArray();
-
-                        dataset[i] = (T)Activator.CreateInstance(typeof(T), parameters);
-                    }
-                }
-                else if (test.mode == "fields") // Аналогично с полями
-                {
-                    for (int i = 0; i < combinationsCount; i++)
-                    {
-                        var instance = Activator.CreateInstance(typeof(T));
-                        foreach (var kvp in fields_constructor)
+                        // По массиву объекты * аргументы создаём сам датасет
+                        for (int i = 0; i < combinationsCount; i++)
                         {
-                            var fieldValue = kvp.Value(i);
-                            var propertyInfo = typeof(T).GetProperty(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-
-                            if (propertyInfo != null)
-                                propertyInfo.SetValue(instance, fieldValue);
-                            else
+                            var parameters = new object[test.rules.Count];
+                            for (int j = 0; j < test.rules.Count; j++)
                             {
-                                var fieldInfo = typeof(T).GetField(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                                fieldInfo.SetValue(instance, fieldValue);
+                                parameters[j] = combinations[i, j];
                             }
-
+                            dataset[i] = (T)Activator.CreateInstance(typeof(T), parameters);
                         }
-                        dataset[i] = (T)instance;
+                    }
+                    else if (test.mode == "fields") // Задаём поля, нужен пустой конструктор
+                    {
+                        // Массив объекты: (поле: значение)
+                        var combinations = new Dictionary<string, object>[combinationsCount];
+
+                        // Этот алгоритм работает, всё, что нужно знать, еле-как вывел
+                        int steps_before_incrimination = combinationsCount;
+                        for (int i = 0; i < test.rules.Count; i++)
+                        {
+                            steps_before_incrimination /= test.rules[i].Combinations;
+                            int current_arg = -1;
+                            int steps = 0;
+
+                            for (int j = 0; j < combinationsCount; j++, steps++)
+                            {
+                                if (steps % steps_before_incrimination == 0)
+                                    current_arg++;
+
+                                if (combinations[j] == null)
+                                    combinations[j] = new Dictionary<string, object>();
+
+                                combinations[j].Add(test.rules[i].field, fields_constructor[test.rules[i].field](current_arg));
+                            }
+                        }
+
+                        // По созданным комбинациям создаём объекты, задаём поля, короче, делаем датасет
+                        for (int i = 0; i < combinationsCount; i++)
+                        {
+                            var instance = Activator.CreateInstance(typeof(T));
+                            foreach (var key in combinations[i].Keys)
+                            {
+                                var fieldValue = combinations[i][key];
+
+
+                                var propertyInfo = typeof(T).GetProperty(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (propertyInfo != null)
+                                    propertyInfo.SetValue(instance, fieldValue);
+                                else
+                                {
+                                    var fieldInfo = typeof(T).GetField(key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                    fieldInfo.SetValue(instance, fieldValue);
+                                }
+                            }
+                            dataset[i] = (T)instance;
+                        }
+                    }
+                    else { throw new InvalidCastException("Unknown test mode, it can be constuctor or fields, nothing else"); }
+
+                    return dataset;
+                }
+                else if (test.combination_mode == "simple") // Минимум комбинаций
+                {
+                    int combinationsCount = 1; // Число комбинаций - максимум из возможных значений полей
+                    foreach (var rule in test.rules)
+                    {
+                        if (combinationsCount < rule.Combinations)
+                            combinationsCount = rule.Combinations;
                     }
 
-                }
-                else { throw new InvalidCastException(); }
+                    T[] dataset = new T[combinationsCount];
 
-                return dataset;
+                    if (test.mode == "constructor") // По конструктору просто перебираем, rule(i) всё равно зациклены
+                    {
+                        for (int i = 0; i < combinationsCount; i++)
+                        {
+                            var parameters = rules_constructor.Select(rule => rule(i)).ToArray();
+
+                            dataset[i] = (T)Activator.CreateInstance(typeof(T), parameters);
+                        }
+                    }
+                    else if (test.mode == "fields") // Аналогично с полями
+                    {
+                        for (int i = 0; i < combinationsCount; i++)
+                        {
+                            var instance = Activator.CreateInstance(typeof(T));
+                            foreach (var kvp in fields_constructor)
+                            {
+                                var fieldValue = kvp.Value(i);
+                                var propertyInfo = typeof(T).GetProperty(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                                if (propertyInfo != null)
+                                    propertyInfo.SetValue(instance, fieldValue);
+                                else
+                                {
+                                    var fieldInfo = typeof(T).GetField(kvp.Key, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                                    fieldInfo.SetValue(instance, fieldValue);
+                                }
+
+                            }
+                            dataset[i] = (T)instance;
+                        }
+
+                    }
+                    else { throw new InvalidCastException("Unknown test mode, it can be constuctor or fields, nothing else"); }
+
+                    return dataset;
+                }
+                else { throw new InvalidCastException($"Unknown combination_mode in JSON file (it must be \"all-to-all\" or \"simple)\""); }
             }
-            else { throw new InvalidCastException($"Unknown combination_mode in JSON file (it must be \"all-to-all\" or \"simple)\""); }
+            catch (Exception ex)
+            {
+                ExceptionBuilder.ThrowWithFullInfo("Can't create dataset with your rules", ex);
+                return null;
+            }
         }
 
 
@@ -252,7 +260,7 @@ namespace JsonUnitSimplifier
                 }
             }
 
-            throw new Exception($"Generation rule of field '{rule.field}' is incorrect");
+            throw new ArgumentException($"Generation rule of field '{rule.field}' is incorrect");
         }
         
 

@@ -11,6 +11,9 @@ namespace JsonUnitSimplifier
 {
     /// <summary>
     /// Выполнение проверок и выброс исключений в случае, если они проваливаются
+    /// 
+    /// Примечание: 
+    /// i - номер объекта в датасете
     /// </summary>
     internal class Assertion
     {
@@ -47,7 +50,7 @@ namespace JsonUnitSimplifier
                 AssertByValue(assert.values[i], actualValue, assert.type_assert, i);
             }
 
-            else throw new Exception("Unknown assert type error");
+            else throw new ArgumentException("Unknown assert type error");
         }
 
 
@@ -75,13 +78,14 @@ namespace JsonUnitSimplifier
             }
             else
             {
-                throw new Exception("There must be function or method!");
+                throw new Exception("Assert of service-to-object must be function or method!");
             }
         }
 
 
         /// <summary>
         /// Проверка вызова функции, ожидаемого результата. Если isFunction false, тогда простой вызов метода
+        /// object first_arg нужен для Assert<Class, Service>, вставится как первый аргумент, помимо остальных
         /// </summary>
         private static void AssertInvoke<DatasetType, InvokeOn>(InvokeOn target, string fname, Assert assert, bool isFunction, int i, object first_arg = null)
         {
@@ -130,13 +134,12 @@ namespace JsonUnitSimplifier
                 // Проверка на соответствие имени исключения
                 if (expectedException != ex.InnerException?.GetType().Name)
                 {
-                    throw new Exception($"Expected exception '{expectedException}', i = {i}, but got '{ex.InnerException?.GetType()}'\n{ex.InnerException.StackTrace}");
+                    ExceptionBuilder.ThrowWithFullInfo($"Expected exception '{expectedException}', i = {i}, but got ", ex);
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error in {assert.method}{assert.function}\n{ex.GetType().Name}\n{ex.Message}\n" +
-                    $"{ex.StackTrace}\n\n{ex.InnerException?.GetType().Name}{ex.InnerException?.Message}\n{ex.InnerException?.StackTrace}");
+                ExceptionBuilder.ThrowWithFullInfo($"FATAL ERROR in assert at {i} calling '{fname}'", ex);
             }
         }
 
