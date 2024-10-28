@@ -641,14 +641,7 @@ namespace JsonUnitSimplifier
             try
             {
                 object[] parameters = new object[0];
-                GetParameters(assert, methodInfo, out parameters, i);
-
-                if (first_arg != null)
-                {
-                    var p = parameters.ToList();
-                    p.Insert(0, first_arg);
-                    parameters = p.ToArray();
-                }
+                GetParameters(assert, methodInfo, out parameters, i, first_arg);
 
                 var res = methodInfo.Invoke(target, parameters);
 
@@ -766,26 +759,52 @@ namespace JsonUnitSimplifier
         /// <summary>
         /// Получает и генерирует список параметров для вызова функций/методов Assert
         /// </summary>
-        private static void GetParameters(Assert assert, MethodInfo methodInfo, out object[] parameters, int i)
+        private static void GetParameters(Assert assert, MethodInfo methodInfo, out object[] parameters, int i, object firstArg = null)
         {
             var requiredParams = methodInfo.GetParameters();
+            List<object> paramList = new List<object>();
+
+            if (firstArg != null)
+            {
+                paramList.Add(firstArg);
+            }
 
             if (assert.args.Count > 0 && assert.args[0] is JArray)
             {
                 var args = assert.args[i] as JArray;
-                parameters = args.Select((arg, index) =>
-                    arg == null && requiredParams[index].ParameterType.IsClass
-                        ? null
-                        : ((JToken)arg).ToObject(requiredParams[index].ParameterType)).ToArray();
+
+                for (int index = 0; index < args.Count; index++)
+                {
+                    var arg = args[index];
+
+                    if (arg == null)
+                    {
+                        paramList.Add(null);
+                    }
+                    else
+                    {
+                        paramList.Add(((JToken)arg).ToObject(requiredParams[index].ParameterType));
+                    }
+                }
             }
             else
             {
-                parameters = assert.args.Select((arg, index) =>
-                    arg == null && requiredParams[index].ParameterType.IsClass
-                        ? null
-                        : Convert.ChangeType(arg, requiredParams[index].ParameterType)).ToArray();
+                for (int index = 0; index < assert.args.Count; index++)
+                {
+                    var arg = assert.args[index];
+
+                    if (arg == null)
+                    {
+                        paramList.Add(null);
+                    }
+                    else
+                    {
+                        paramList.Add(Convert.ChangeType(arg, requiredParams[index].ParameterType));
+                    }
+                }
             }
-            Console.WriteLine("Param-param");
+            parameters = paramList.ToArray(); // Преобразуем список в массив
         }
+
     }
 }
