@@ -101,7 +101,7 @@ namespace JsonUnitSimplifier
                 catch (Exception ex)
                 {
                     failed_count++;
-                    fail_message += $"\nFAIL: {json} CAUSE \n{ex.InnerException?.GetType().Name}\n{ex.InnerException?.Message}\n{ex.StackTrace}\n";                
+                    fail_message += $"\nFAIL: {json} CAUSE \n{ex.InnerException?.GetType().Name}\n{ex.InnerException?.Message}\n{ex.StackTrace}\n{ex.Message}\n";                
                 }
             }
 
