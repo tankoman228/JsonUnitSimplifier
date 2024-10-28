@@ -5,7 +5,7 @@ VisualStudioVersion = 17.1.32210.238
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonUnitSimplifier", "JsonUnitSimplifier.csproj", "{83E137EF-E0DF-433C-A362-BB762E55E770}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY", "..\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY.csproj", "{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY", "UnitTests\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY.csproj", "{B1AB6B5F-8BBC-4D60-AA99-157AA60E588E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{83E137EF-E0DF-433C-A362-BB762E55E770}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83E137EF-E0DF-433C-A362-BB762E55E770}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83E137EF-E0DF-433C-A362-BB762E55E770}.Release|Any CPU.Build.0 = Release|Any CPU
-		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{664ED45B-D08C-46A6-A286-A64AFF1A1FB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1AB6B5F-8BBC-4D60-AA99-157AA60E588E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1AB6B5F-8BBC-4D60-AA99-157AA60E588E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1AB6B5F-8BBC-4D60-AA99-157AA60E588E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1AB6B5F-8BBC-4D60-AA99-157AA60E588E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

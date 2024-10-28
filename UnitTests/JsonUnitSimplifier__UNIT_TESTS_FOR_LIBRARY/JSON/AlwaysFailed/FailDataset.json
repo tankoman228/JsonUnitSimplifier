@@ -1,0 +1,12 @@
+{
+  "id": "No id, I am lazy",
+  "mode": "fields",
+  "combination_mode": "all-to-all",
+  "classes": [ "JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY.TestedObject,JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY" ],
+  "rules": [
+    {
+      "field": "FieldDouble",
+      "value": "Десятнадцать"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "No id, I am lazy",
+  "mode": "fields",
+  "combination_mode": "simple",
+  "classes": [ "JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY.TestedObject,JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY" ],
+  "rules": [
+    {
+      "field": "FieldInt",
+      "field_type": "System.Int32",
+      "values": [ 1, 2, 3, 4, 5 ]
+    }
+  ],
+  "assert_before_lambda": [
+    {
+      "function": "ExceptNotImplementedIfZeroOrReturnZero",
+      "type_assert": "unequals",
+      "args": [ 1 ],
+      "result": 0
+    }
+  ]
+}

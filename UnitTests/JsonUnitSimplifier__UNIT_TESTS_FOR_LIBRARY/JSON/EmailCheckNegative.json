@@ -1,0 +1,22 @@
+{
+  "id": "Email Checker",
+  "mode": "constructor",
+  "combination_mode": "simple",
+  "rules": [
+    {
+      "function": "emails_wrong",
+      "function_calls": 6
+    }
+  ],
+  "assert_before_lambda": [
+    {
+      "function": "Check",
+      "type_assert": "unequals",
+      "result": true
+    },
+    {
+      "function": "Check",
+      "result": false
+    }
+  ]
+}

@@ -13,6 +13,12 @@ namespace JsonUnitSimplifier
 
         public static void AddFunc(string key, Func<int, object> func)
         {
+            if (Functions.ContainsKey(key))
+            {
+                Console.WriteLine("WARNING!!!\n" +
+                    "ONE GenerateFunctions FUNCTION DEFINITION REPLACES ANOTHER ONE!\n\n");
+                Console.WriteLine(key + " has been replaced\n");
+            }
             Functions[key] = func;
         }
 

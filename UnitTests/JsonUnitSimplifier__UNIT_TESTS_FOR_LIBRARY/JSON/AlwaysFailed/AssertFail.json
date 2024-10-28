@@ -1,0 +1,31 @@
+{
+  "id": "No id, I am lazy",
+  "mode": "fields",
+  "combination_mode": "simple",
+  "classes": [ "JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY.TestedObject,JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY" ],
+  "rules": [
+    {
+      "field": "FieldInt",
+      "values": [ 1, 2, 3, 4, 5 ]
+    },
+    {
+      "field": "FieldFloat",
+      "random": [ -23.2, -2 ]
+    },
+    {
+      "field": "FieldDouble",
+      "range": [ -1, 1 ],
+      "step": 0.5
+    },
+    {
+      "field": "FieldString",
+      "value": "Тугрики, хи-хи-хи"
+    }
+  ],
+  "assert_after_lambda": [
+    {
+      "field": "FieldFloat",
+      "value": 0
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "id": "No id, I am lazy",
+  "mode": "fields",
+  "combination_mode": "simple",
+  "classes": [ "Namespace.NoNeedInThisSituation"],
+  "rules": [
+    {
+      "field": "FieldInt",
+      "values": [ 1, 2, 3, 4, 5 ]
+    },
+    {
+      "field": "FieldFloat",
+      "random": [ -23.2, -2]
+    },
+    {
+      "field": "FieldDouble",
+      "range": [ -1, 1 ],
+      "step": 0.5
+    },
+    {
+      "field": "FieldString",
+      "function": "created_function"
+    }
+  ],
+  "assert_after_lambda": [
+    {
+      "field": "FieldString",
+      "type_assert": "regex",
+      "value": "."
+    },
+    {
+      "field": "FieldString",
+      "type_assert": "function",
+      "value": "created_function"
+    },
+    {
+      "field": "FieldFloat",
+      "type_assert": "lesser",
+      "value": 0
+    }
+  ]
+}

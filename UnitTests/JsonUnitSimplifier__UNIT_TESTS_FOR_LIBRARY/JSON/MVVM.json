@@ -1,0 +1,69 @@
+{
+  "id": "No id, I am lazy",
+  "mode": "fields",
+  "combination_mode": "all-to-all",
+  "classes": [ "Namespace.NoNeedInThisSituation"],
+  "rules": [
+    {
+      "field": "FieldInt",
+	    "field_type": "System.Int32",
+      "values": [ 1, 2, 3, 4, 5 ]
+    },
+    {
+      "field": "FieldFloat",
+	    "field_type": "System.Single",
+      "value": -23.2
+    },
+    {
+      "field": "FieldDouble",
+      "range": [ 11, 15 ],
+      "step": 1
+    },
+    {
+      "field": "FieldString",
+      "value": "created"
+    }
+  ],
+  "assert_before_lambda": [
+  {
+	"function": "GetSecret",
+	"target": "objects",
+	"result": null
+  },
+  {
+	"method": "SetSecret",
+	"target": "objects",
+	"args": ["hi-hi"]	
+  },
+  {
+	"function": "GetSecret2",
+	"args": [2],
+	"type_assert": "regex",
+	"target": "objects",
+	"result": ".hi-hi!!!."	
+  }
+  ],
+  "assert_after_lambda": [
+    {
+      "function": "Len",
+      "args": [],
+      "type_assert": "equals",
+      "target": "service",
+      "result": 25
+    },
+    {
+      "field": "FieldInt",
+      "args": [],
+      "type_assert": "equals",
+      "target": "objects",
+      "values": [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5 ]
+    },
+    {
+      "function": "GetDouble",
+      "args": [],
+      "type_assert": "equals",
+      "target": "service-to-object",
+      "results": [ 11, 12, 13, 14, 15, 11, 12, 13, 14, 15, 11, 12, 13, 14, 15, 11, 12, 13, 14, 15, 11, 12, 13, 14, 15 ]
+    }
+  ]
+}
