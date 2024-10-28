@@ -39,6 +39,7 @@
 по этому конструктору будет создан датасет.
 
 Начнём с создания файла AsyncManager.json. Для проведения теста создадим 3*2=6 объектов:
+```json
 {
   "id": "Async Manager",
   "mode": "constructor",
@@ -53,7 +54,7 @@
       "function_calls": 2
     }
   ],
-
+```
 Для справки, датасет по этим правилам:
 
 new AsyncManager("place A", action_error(0));
@@ -64,14 +65,15 @@ new AsyncManager("place Ы", action_error(4));
 new AsyncManager("place Ы", action_error(5));
 
 Перейдём к описанию тестов. 
-
-  "asser_before_lambda": [
+```json
+  "assert_before_lambda": [
     {
       "field": "Where",
       "type_assert": "regex",
       "value": "place (A|B|Ы)"
     }
   ]
+```
 Так проверим, что "Where" содержит верное значение.
 
 Перейдём к коду (также см. файл Unit_AsyncManager.cs в папке Tests)
@@ -105,6 +107,7 @@ new AsyncManager("place Ы", action_error(5));
         }
 
 Полный JSON файл:
+```json
 {
   "id": "Async Manager",
   "mode": "constructor",
@@ -126,7 +129,7 @@ new AsyncManager("place Ы", action_error(5));
     }
   ]
 }
-
+```
 
 В данном тесте потребовалась пользовательская логика только для проверки асинхронности.
 Пример теста без использования библотеки - в конце Unit_AsyncManager.cs.
@@ -151,6 +154,7 @@ TestByJSON.TestLayeredService<server, RepositoryMock <server>> (
 "mode": "fields" - объекты модели создают только через поля
 "combination_mode": "simple" - нам не нужно проверять все комбинации
 
+```json
 {
   "id": "Repository Mock",
   "mode": "fields",
@@ -176,13 +180,14 @@ TestByJSON.TestLayeredService<server, RepositoryMock <server>> (
     }
   ],
 "assert_before_lambda": [ ...
+```
 Получен простенький датасет из 3-х элементов, этого хватит, чтоб проверить затычку.
 
 Далее вызываем на затычке методы интерфейса IRepository
 T GetById(int id);
 int Add(T entity);
 void Delete(int id);
-
+```json
    {
       "target": "service",
       "function": "GetById",
@@ -190,22 +195,25 @@ void Delete(int id);
       "type_assert": "unequals",
       "result": null
     },
+```
 GetById должен вернуть ссылку на существующий объект
-
+```json
     {
       "field": "id",
       "target": "objects",
       "results": [ 0, 1, 2 ]
     },
+```
 Проверим, задала ли затычка id объектам датасета
-
+```json
     {
       "function": "Add",
       "target": "service-to-object",
       "results": [ 3, 4, 5 ]
     }
+```
 Затычка должна вернуть псевдо-id для объектов при добавлении (датасет не изменяется после вызова)
-
+```json
     {
       "method": "Delete",
       "target": "service",
@@ -217,9 +225,11 @@ GetById должен вернуть ссылку на существующий �
       "args": [ 5 ],
       "exception": "Exception"
     }
+```
 Затычка должна удалить объект, при попытке доступа - ошибка.
 
 За кадром расширим датасет. Итого, тест выглядит так:
+```json
 {
   "id": "Repository Mock",
   "mode": "fields",
@@ -274,15 +284,17 @@ GetById должен вернуть ссылку на существующий �
     }
   ]
 }
+```
 Таким образом будет протестирован класс RepositoryMock<server>. И если интерфейс класса расширится и добавятся (изменятся) функции, отредактировать тест будет куда проще, чем редактировать код.
 
 В файле Unit_RepositoryMock.cs есть пример того же теста без использования библиотеки. 
 
+См. таблицу:
 ---------------------------------------------------------
-| SEO анализ	| символов всего | без пробелов | строк |
+- SEO анализ	- символов всего - без пробелов - строк -
 ---------------------------------------------------------
-| JSON + CS	| 1024		 | 886 		| 54+9	|
-| Чистый CS	| 1133    	 | 1021		| 57	|
+- JSON + CS	- 1024		 - 886 		- 54+9	-
+- Чистый CS	- 1133    	 - 1021		- 57	-
 ---------------------------------------------------------
 
 Итого:
@@ -310,6 +322,7 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
 3. ComponentService
 
 Начало файла теста Auto\ComponentService.json:
+```json
 {
   "id": "ComponentService",
   "mode": "fields",
@@ -330,7 +343,7 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
 
   ]
 }
-
+```
 Порядок элементов "classes" важен.
 Первый элемент - объект модели, через запятую имя сборки.
 Второй - тестируемая служба (есть конструктор с аргументом интерфейсом репозитория)
@@ -342,17 +355,18 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
 Далее показаны assert для каждого из тестируемых компонентов
 
 3.1 GetComponents()
-
+```json
     {
       "function": "GetComponents",
       "target":  "service",
       "type_assert": "unequals",
       "result": null
     }
+```
 Просто проверим, возвращает ли хоть что-то
 
 3.2 SearchComponent(string search)
-    
+    ```json
     {
       "function": "SearchComponent",
       "target": "service",
@@ -366,10 +380,11 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
       "args": [ null ],
       "exception": "ArgumentNullException"
     }
+    ```
 Чтобы находило, что есть, и чтобы выплёвывала null, 2 теста в одном
 
 3.3 RemoveComponent(string component)
-
+```json
     {
       "function": "RemoveComponent",
       "target": "service",
@@ -386,6 +401,7 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
       "target": "service",
       "args": [ "kingston a-3982 677GB" ],
     }
+```
 Удаляем и смотрим, что компонент больше не найти.
 
 Если при запуске возникли исключения, внимательно читайте их сообщения. Там указано, когда какой тест был провален и при каких условиях.
@@ -399,6 +415,7 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
 4. ComponentTypeService
 
 Начало:
+```json
 {
   "id": "ComponentTypeService",
   "mode": "fields",
@@ -410,6 +427,7 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
     "AddComponentType"
   ]
 }
+```
 
 Однако, класс не содержит метода, который можно было бы передать в качестве делегата. Потому его пришлось создать.
 В данном случае есть 2 варианта - генерировать датасет не правилами, либо определить метод для добавления.
@@ -421,6 +439,7 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
         }
 
 Вариант создания датасета, если использовать AddComponentType:
+```json
 {
   "id": "ComponentTypeService with dataset",
   "mode": "fields",
@@ -438,9 +457,10 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
     }
   ]
 }
-
+```
 
 Вариант 2 (rules должен быть пустым! "AddComponentType" должен быть объявлен, реализация не имеет значения. "mode": "constructor"):
+```json
 {
   "id": "ComponentTypeService No dataset",
   "mode": "constructor",
@@ -464,9 +484,11 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
     }
   ]
 }
+```
 
 4.1 GetComponentTypes()
-  
+
+  ```json
 "assert_after_lambda": [
     {
       "target": "service",
@@ -475,9 +497,22 @@ public class RepositoryMockComponentType : RepositoryMock<component_type> { };
       "type_assert": "unequals"
     }
   ]
-
+```
 4.2 IdOrAddComponentTypeIfNotExists(string name)
 
-
+  ```json
+    {
+      "target": "service",
+      "function": "IdOrAddComponentTypeIfNotExists",
+      "args": [ "CPU" ],
+      "result": 1
+    },
+    {
+      "target": "service",
+      "function": "IdOrAddComponentTypeIfNotExists",
+      "args": [ "Adapter" ],
+      "result": 4
+    }
+```
 
 
