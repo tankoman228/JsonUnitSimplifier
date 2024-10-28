@@ -145,133 +145,76 @@ namespace JsonUnitSimplifier
                 insert(service, item);
             }
 
-            // Ассерты до доп. логики
             if (test.assert_before_lambda != null)
-            {
-                foreach (var a in test.assert_before_lambda)
-                {
-                    if (a.target == "service-to-object")
-                    {
-                        int i = 0;
-                        foreach (var item in dataset)
-                        {
-                            try
-                            {
-                                Assert<Class, Service>(item, service, a, i);
-                                i++;
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new Exception($"Assert of {a.function}{a.method}(dataset[{i}], ...) failed: {ex.Message}");
-                            }
-
-                        }
-                    }
-                    else if (a.target == "service")
-                    {
-                        try
-                        {
-                            if (a.args[0] is JArray)
-                            {
-                                for (int i = 0; i < a.args.Count; i++)
-                                {
-                                    Assert<Service>(service, a, i);
-                                }
-                            }
-                            else
-                                Assert<Service>(service, a, 0);
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} service class failed: {ex.Message}");
-                        }
-                    }
-                    else if (a.target == "objects")
-                    {
-                        int i = 0;
-                        foreach (var item in dataset)
-                        {
-                            try
-                            {
-                                Assert(item, a, i);
-                                i++;
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} dataset[{i}] failed: {ex.Message}");
-                            }
-                        }
-                    }
-                    else { throw new Exception($"{a.target} is not a valid target. It can be only service_to_object, service or objects"); }
-                }
-            }
+                goTestLayeredServiceAsserts(test.assert_before_lambda, dataset, service);
 
             if (testLogic != null)
-            {
                 testLogic(service, dataset);
-            }
 
-            // Ассерты после доп. логики
             if (test.assert_after_lambda != null)
-            {
-                foreach (var a in test.assert_after_lambda)
-                {
-                    if (a.target == "service-to-object")
-                    {
-                        int i = 0;
-                        foreach (var item in dataset)
-                        {
-                            try
-                            {
-                                Assert<Class, Service>(item, service, a, i);
-                                i++;
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new Exception($"Assert of {a.function}{a.method}(dataset[{i}], ...) failed: {ex.Message}");
-                            }
+                goTestLayeredServiceAsserts(test.assert_after_lambda, dataset, service);
 
-                        }
-                    }
-                    else if (a.target == "service")
+        }
+        private static void goTestLayeredServiceAsserts<Class, Service>(
+            List<Assert> asserts, Class[] dataset, Service service
+            )
+        {
+            foreach (var a in asserts)
+            {
+                if (a.target == "service-to-object")
+                {
+                    int i = 0;
+                    foreach (var item in dataset)
                     {
                         try
                         {
-                            if (a.args[0] is JArray)
-                            {
-                                for (int i = 0; i < a.args.Count; i++)
-                                {
-                                    Assert<Service>(service, a, i);
-                                }
-                            }
-                            else
-                                Assert<Service>(service, a, 0);
+                            Assert<Class, Service>(item, service, a, i);
+                            i++;
                         }
                         catch (Exception ex)
                         {
-                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} service class failed: {ex.Message}");
+                            throw new Exception($"Assert of {a.function}{a.method}(dataset[{i}], ...) failed: {ex.Message}");
                         }
-                    }
-                    else if (a.target == "objects")
-                    {
-                        int i = 0;
-                        foreach (var item in dataset)
-                        {
-                            try
-                            {
-                                Assert(item, a, i);
-                                i++;
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} dataset[{i}] failed: {ex.Message}");
-                            }
-                        }
-                    }
-                    else { throw new Exception($"{a.target} is not a valid target. It can be only service-to-object, service or objects"); }
-                }
-            }
 
+                    }
+                }
+                else if (a.target == "service")
+                {
+                    try
+                    {
+                        if (a.args.Count > 0 && a.args[0] is JArray)
+                        {
+                            for (int i = 0; i < a.args.Count; i++)
+                            {
+                                Assert<Service>(service, a, i);
+                            }
+                        }
+                        else
+                            Assert<Service>(service, a, 0);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} service class failed: {ex.Message}");
+                    }
+                }
+                else if (a.target == "objects")
+                {
+                    int i = 0;
+                    foreach (var item in dataset)
+                    {
+                        try
+                        {
+                            Assert(item, a, i);
+                            i++;
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Assert of {a.type_assert} {a.function}{a.method} dataset[{i}] failed: {ex.Message}");
+                        }
+                    }
+                }
+                else { throw new Exception($"{a.target} is not a valid target. It can be only service-to-object, service or objects"); }
+            }
         }
 
         /// <summary>
