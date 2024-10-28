@@ -604,26 +604,21 @@ var dataset_array2 =
 Возможно проводить тесты, вызывая особые методы для автоматического проведения тестов.
 Для этого требуется указать файлы и передать TestByJSON.AutoTestByJSON
 
-[TestMethod]
-public void AutoTest()
-{
-    string content = File.ReadAllText(
-        "C:\\Users\\Admin\\source\\repos\\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY\\JSON\\" +
-        "Auto\\Auto.json");
-        TestByJSON.AutoTestByJSON(content); // Тестирует по отдельному файлу
-    }
-}
+```cs
+        [TestMethod]
+        public void AutoTest()
+        {
+            string content = PATHS.JSON + "Auto\\Auto.json";
+            TestByJSON.AutoTestByJSON(content);
+        }
 
-[TestMethod]
-public void AutoTest()
-{
-    string path = File.ReadAllText(
-        "C:\\Users\\Admin\\source\\repos\\JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY\\JSON\\" +
-        "Auto\\);
-        TestByJSON.AutoTestByJSONs(path); // Тестирует по всем JSON файлам в директории
-    }
-}
-
+        [TestMethod]
+        public void AutoTests()
+        {
+            string content = PATHS.JSON + "Auto\\";
+            TestByJSON.AutoTestByJSONs(content);
+        }
+```
 Обязательно в начале JSON файла обязательно следует указать имена классов и вашей сборки:
 
   ```json
