@@ -69,8 +69,8 @@ namespace JsonUnitSimplifier
                 if (insertDelegate == null) throw new Exception("Can't create insert delegate");
 
                 // Теперь вызываем метод TestServiceMVVM с нужными типами
-                var testServiceMVVMMethod = typeof(TestByJSON).GetMethod("TestLayeredService").MakeGenericMethod(classType, serviceType);
-                testServiceMVVMMethod.Invoke(null, new object[] { json, serviceInstance, insertDelegate, testLogicDelegate });              
+                var testLayered = typeof(TestByJSON).GetMethod("TestLayeredService").MakeGenericMethod(classType, serviceType);
+                testLayered.Invoke(null, new object[] { json, serviceInstance, insertDelegate, testLogicDelegate });              
             }
             else
             {
@@ -330,6 +330,9 @@ namespace JsonUnitSimplifier
         /// <exception cref="InvalidCastException"></exception>
         private static T[] getDataset<T>(UnitTest test)
         {
+            if (test.rules.Count == 0)
+                return new T[0];
+
             // Правила генерации для разных режимов
             List<Func<int, object>> generation_rules_l = new List<Func<int, object>>(); 
             // Если создавать конструктором
@@ -541,6 +544,21 @@ namespace JsonUnitSimplifier
             {
                 return GenerateFunctions.Get(rule.function);
             }
+            else if (rule.random != null)
+            {
+                if (rule.random is string)
+                {
+                    var randomStringGenerator = new RandomStringGenerator();
+                    return i => randomStringGenerator.Generate(rule.random as string);
+                }
+                else
+                {
+                    var rand = rule.random as JArray;                   
+                    Random random = new Random();
+                    return i => (double)rand[0] + random.NextDouble() * ((double)rand[1] - (double)rand[0]);
+                }
+            }
+            
             throw new Exception($"Generation rule of field '{rule.field}' is incorrect");            
         }
         private static Type GetTypeOfRule(Rule rule, Type DatasetType)

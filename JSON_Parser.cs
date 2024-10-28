@@ -79,6 +79,7 @@ namespace JsonUnitSimplifier
         public string function { get; set; }
         public int? function_calls { get; set; }
         public string field_type { get; set; }
+        public object random { get; set; }
 
         public void try_update_type_of_fields()
         {
@@ -123,6 +124,9 @@ namespace JsonUnitSimplifier
                         return (int)function_calls;
                     return 1;
                 }
+                else if (random != null)
+                    return 1;
+
                 throw new Exception("I am a teapot");
             } 
         }

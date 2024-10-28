@@ -49,6 +49,7 @@
     <Compile Include="GenerateFunctions.cs" />
     <Compile Include="JSON_Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RandomStringGenerator.cs" />
     <Compile Include="TestByJSON.cs" />
   </ItemGroup>
   <ItemGroup>
