@@ -646,9 +646,9 @@ namespace JsonUnitSimplifier
                 var res = methodInfo.Invoke(target, parameters);
 
                 // Проверка исключения
-                if (assert.exception != null)
+                if (assert.exception != null || (assert.exceptions != null && assert.exceptions[i] != null))
                 {
-                    throw new Exception($"Expected exception '{assert.exception}' was not thrown.");
+                    throw new Exception($"Expected exception '{assert.exception}{assert.exceptions?[i]}' was not thrown.");
                 }
 
                 if (isFunction)
@@ -669,7 +669,7 @@ namespace JsonUnitSimplifier
             {
                 string expectedException = null;
 
-                if (assert.exceptions != null && assert.exceptions[i] != null)
+                if (assert.exceptions != null)
                     expectedException = assert.exceptions[i];
                 else
                     expectedException = assert.exception;
@@ -677,13 +677,13 @@ namespace JsonUnitSimplifier
                 // Проверка на соответствие имени исключения
                 if (expectedException != ex.InnerException?.GetType().Name)
                 {
-                    throw new Exception($"Expected exception '{assert.exceptions[i]}', i = {i}, but got '{ex.InnerException?.GetType()}'\n{ex.InnerException.StackTrace}");
+                    throw new Exception($"Expected exception '{expectedException}', i = {i}, but got '{ex.InnerException?.GetType()}'\n{ex.InnerException.StackTrace}");
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error while executing {assert.method}{assert.function}\n{ex.GetType().Name}\n{ex.Message}\n" +
-                    $"{ex.StackTrace}\n{ex.InnerException?.Message}\n{ex.InnerException?.StackTrace}");
+                throw new Exception($"Error in {assert.method}{assert.function}\n{ex.GetType().Name}\n{ex.Message}\n" +
+                    $"{ex.StackTrace}\n\n{ex.InnerException?.GetType().Name}{ex.InnerException?.Message}\n{ex.InnerException?.StackTrace}");
             }
         }
 
