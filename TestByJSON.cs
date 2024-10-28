@@ -171,7 +171,15 @@ namespace JsonUnitSimplifier
                     {
                         try
                         {
-                            Assert<Service>(service, a, 0);
+                            if (a.args[0] is JArray)
+                            {
+                                for (int i = 0; i < a.args.Count; i++)
+                                {
+                                    Assert<Service>(service, a, i);
+                                }
+                            }
+                            else
+                                Assert<Service>(service, a, 0);
                         }
                         catch (Exception ex)
                         {
@@ -229,7 +237,15 @@ namespace JsonUnitSimplifier
                     {
                         try
                         {
-                            Assert<Service>(service, a, 0);
+                            if (a.args[0] is JArray)
+                            {
+                                for (int i = 0; i < a.args.Count; i++)
+                                {
+                                    Assert<Service>(service, a, i);
+                                }
+                            }
+                            else
+                                Assert<Service>(service, a, 0);
                         }
                         catch (Exception ex)
                         {
@@ -801,7 +817,7 @@ namespace JsonUnitSimplifier
                     }
                     else
                     {
-                        paramList.Add(((JToken)arg).ToObject(requiredParams[index].ParameterType));
+                        paramList.Add(arg.ToObject(requiredParams[index].ParameterType));
                     }
                 }
             }
