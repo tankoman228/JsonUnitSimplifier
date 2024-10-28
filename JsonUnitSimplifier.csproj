@@ -44,14 +44,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Generators\DatasetCreator.cs" />
-    <Compile Include="Generators\Constructor.cs" />
-    <Compile Include="GenerateFunctionAttribute.cs" />
-    <Compile Include="GenerateFunctions.cs" />
-    <Compile Include="JSON_Parser.cs" />
+    <Compile Include="Internal\DatasetCreator.cs" />
+    <Compile Include="Public\Constructor.cs" />
+    <Compile Include="Internal\Assertion.cs" />
+    <Compile Include="Public\GenerateFunctionAttribute.cs" />
+    <Compile Include="Public\GenerateFunctions.cs" />
+    <Compile Include="Internal\JSON_Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Generators\RandomStringGenerator.cs" />
-    <Compile Include="TestByJSON.cs" />
+    <Compile Include="Internal\RandomStringGenerator.cs" />
+    <Compile Include="Public\TestByJSON.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
