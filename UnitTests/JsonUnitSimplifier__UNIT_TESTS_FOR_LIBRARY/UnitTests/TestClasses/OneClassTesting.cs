@@ -135,5 +135,14 @@ namespace JsonUnitSimplifier__UNIT_TESTS_FOR_LIBRARY
             content = PATHS.JSON + "EmailCheckNegative.json";
             TestByJSON.TestObject<EmailVerificator>(content, o => {});
         }
+
+        [TestMethod]
+        public void EmailCheckRandom()
+        {
+            var content = PATHS.JSON + "EmailCheckRandom.json";
+            TestByJSON.TestObject<EmailVerificator>(content, o => {
+                Console.WriteLine(o.email);
+            });
+        }
     }
 }

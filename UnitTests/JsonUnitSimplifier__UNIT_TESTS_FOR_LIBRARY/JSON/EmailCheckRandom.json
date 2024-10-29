@@ -1,0 +1,17 @@
+{
+  "id": "Email Checker",
+  "mode": "constructor",
+  "combination_mode": "simple",
+  "rules": [
+    {
+      "random": "[c5-15]@{gmail.com,mail.ru}",
+      "function_calls": 2000
+    }
+  ],
+  "assert_before_lambda": [
+    {
+      "function": "Check",
+      "result": true
+    }
+  ]
+}

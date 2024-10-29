@@ -12,6 +12,7 @@ namespace JsonUnitSimplifier
     {      
         internal static UnitTest Parse(string json)
         {
+            // Получение джейсон строки
             try
             {
                 json = File.ReadAllText(json);
@@ -21,16 +22,20 @@ namespace JsonUnitSimplifier
                 Console.WriteLine(e.GetType().Name + ": can't find or read file, trying to parse json as json string");
             }            
 
+            // Десеарилизация
             var test = JsonConvert.DeserializeObject<UnitTest>(json);
 
+            // Чтобы без ошыбок пустоко массива
             if (test.rules == null)
                 test.rules = new List<Rule>();
 
+            // Обработка правил в объекте после парсинга классы см. ниже
             foreach (var rule in test.rules)
             {
                 rule.try_update_type_of_fields();
             }
 
+            // Убираем ошибки нуля, ставим значения по умолчанию
             if (test.assert_before_lambda != null && test.assert_before_lambda.Count > 0)
             {
                 foreach (var assert in test.assert_before_lambda)
@@ -125,7 +130,11 @@ namespace JsonUnitSimplifier
                     return 1;
                 }
                 else if (random != null)
+                {
+                    if (function_calls != null)
+                        return (int)function_calls;
                     return 1;
+                }
 
                 throw new Exception("I am a teapot");
             } 
