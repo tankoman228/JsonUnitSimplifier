@@ -29,8 +29,7 @@
 	"function": "ExceptNotImplementedIfZeroOrReturnZero",
 	"type_assert": "unequals",
 	"args": [0],
-	"result": 1,
-	"exception": null
+	"result": 1
   },
   {
 	"function": "ExceptNotImplementedIfZeroOrReturnZero",

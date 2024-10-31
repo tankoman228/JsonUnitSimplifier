@@ -27,16 +27,6 @@ namespace JsonUnitSimplifier
             return Functions[key];
         }
 
-        public static string getKeys()
-        {
-            string keys = "";
-            foreach (string key in Functions.Keys)
-            {
-                keys += key + " ";
-            }
-            return keys;
-        }
-
         /// <summary>
         /// Загрузка функций в словарь по GenerateFunctionAttribute
         /// </summary>

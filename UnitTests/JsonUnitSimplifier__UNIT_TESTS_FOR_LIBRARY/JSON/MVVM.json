@@ -46,21 +46,16 @@
   "assert_after_lambda": [
     {
       "function": "Len",
-      "args": [],
-      "type_assert": "equals",
       "target": "service",
       "result": 25
     },
     {
       "field": "FieldInt",
-      "args": [],
-      "type_assert": "equals",
       "target": "objects",
       "values": [ 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5 ]
     },
     {
       "function": "GetDouble",
-      "args": [],
       "type_assert": "equals",
       "target": "service-to-object",
       "results": [ 11, 12, 13, 14, 15, 11, 12, 13, 14, 15, 11, 12, 13, 14, 15, 11, 12, 13, 14, 15, 11, 12, 13, 14, 15 ]

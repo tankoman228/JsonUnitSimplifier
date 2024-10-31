@@ -155,6 +155,7 @@ namespace JsonUnitSimplifier
                 goTestLayeredServiceAsserts(test.assert_after_lambda, dataset, service);
 
         }
+
         private static void goTestLayeredServiceAsserts<Class, Service>(
             List<Assert> asserts, Class[] dataset, Service service
             )
@@ -249,6 +250,7 @@ namespace JsonUnitSimplifier
                 GoTestClassAsserts(test.assert_after_lambda, dataset);
             }
         }
+
         private static void GoTestClassAsserts<T>(List<Assert> asserts, T[] dataset)
         {
             int i = 0;
