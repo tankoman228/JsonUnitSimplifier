@@ -219,6 +219,7 @@ namespace JsonUnitSimplifier
 
         /// <summary>
         /// Получает и генерирует список параметров для вызова функций/методов Assert
+        /// Вызывается в Assertion.AssertInvoke
         /// </summary>
         private static void GetParameters(Assert assert, MethodInfo methodInfo, out object[] parameters, int i, object firstArg = null)
         {
